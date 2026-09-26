@@ -41,17 +41,13 @@ def home():
 def ask():
 
     try:
-
-        data = request.get_json(
-            silent=True
-        ) or {}
+        data = request.get_json(silent=True) or {}
 
         question = str(
             data.get("question", "")
         ).strip()
 
         if not question:
-
             return jsonify({
                 "error": "Please enter a question."
             }), 400
@@ -64,7 +60,6 @@ def ask():
         web_context = ""
 
         try:
-
             search_response = tavily_client.search(
                 query=question,
                 search_depth="advanced",
@@ -83,11 +78,7 @@ def ask():
             )
 
         except Exception as e:
-
-            print(
-                "TAVILY ERROR:",
-                e
-            )
+            print("TAVILY ERROR:", e)
 
 
         # ==================================
@@ -99,7 +90,6 @@ def ask():
             model="openai/gpt-oss-20b",
 
             messages=[
-
                 {
                     "role": "system",
 
@@ -138,7 +128,6 @@ def ask():
                         f"{web_context}"
                     )
                 }
-
             ]
         )
 
@@ -158,10 +147,7 @@ def ask():
 
     except Exception as e:
 
-        print(
-            "AI ERROR:",
-            e
-        )
+        print("AI ERROR:", e)
 
         return jsonify({
             "error": str(e)
@@ -178,18 +164,13 @@ def ask():
 )
 def transcribe():
 
-    print(
-        "VOICE REQUEST RECEIVED"
-    )
+    print("VOICE REQUEST RECEIVED")
 
 
     if "audio" not in request.files:
 
         return jsonify({
-
-            "error":
-                "No audio file received."
-
+            "error": "No audio file received."
         }), 400
 
 
@@ -204,10 +185,7 @@ def transcribe():
         if not audio_data:
 
             return jsonify({
-
-                "error":
-                    "Audio file is empty."
-
+                "error": "Audio file is empty."
             }), 400
 
 
@@ -239,40 +217,24 @@ def transcribe():
         if not text:
 
             return jsonify({
-
-                "error":
-                    "No speech detected."
-
+                "error": "No speech detected."
             }), 400
 
 
-        print(
-            "VOICE TEXT:",
-            text
-        )
+        print("VOICE TEXT:", text)
 
 
         return jsonify({
-
-            "text":
-                text
-
+            "text": text
         })
 
 
     except Exception as e:
 
-        print(
-            "TRANSCRIPTION ERROR:",
-            e
-        )
-
+        print("TRANSCRIPTION ERROR:", e)
 
         return jsonify({
-
-            "error":
-                str(e)
-
+            "error": str(e)
         }), 500
 
 
@@ -288,32 +250,34 @@ if __name__ == "__main__":
     print("================================")
     print("")
 
-    print(
-        "SERVER:"
-    )
-
-    print(
-        "http://127.0.0.1:5000"
-    )
+    print("SERVER:")
+    print("http://127.0.0.1:5000")
 
     print("")
 
-    print(
-        "AVAILABLE ROUTES:"
-    )
-
-    print(
-        app.url_map
-    )
+    print("AVAILABLE ROUTES:")
+    print(app.url_map)
 
     print("")
+
+
+    # ======================================
+    # RENDER / LOCAL PORT
+    # ======================================
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
 
 
     app.run(
 
-        host="127.0.0.1",
+        host="0.0.0.0",
 
-        port=5000,
+        port=port,
 
         debug=True,
 
