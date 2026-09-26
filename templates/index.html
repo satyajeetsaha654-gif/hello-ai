@@ -37,8 +37,6 @@ header{
   overflow-y:auto;
 }
 
-/* CHAT MESSAGE */
-
 .message{
   max-width:80%;
   padding:11px 15px;
@@ -51,16 +49,12 @@ header{
 .user-message{
   margin-left:auto;
   background:#333;
-  text-align:left;
 }
 
 .ai-message{
   margin-right:auto;
   background:#222;
-  text-align:left;
 }
-
-/* INPUT BAR */
 
 .bar{
   position:relative;
@@ -106,8 +100,6 @@ header{
   color:#fff;
 }
 
-/* PLUS MENU */
-
 #plusMenu{
   position:absolute;
   left:12px;
@@ -144,8 +136,6 @@ header{
 .icon{
   font-size:23px;
 }
-
-/* VOICE */
 
 #voice{
   position:fixed;
@@ -204,56 +194,6 @@ header{
   font-size:28px;
   cursor:pointer;
 }
-
-/* CREATE IMAGE */
-
-#createImage{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  z-index:1100;
-  padding:25px;
-}
-
-#createImage h2{
-  margin-bottom:20px;
-}
-
-#imagePrompt{
-  width:90%;
-  max-width:600px;
-  padding:15px;
-  border-radius:12px;
-  border:1px solid #444;
-  background:#222;
-  color:#fff;
-  font-size:16px;
-}
-
-#createBtn{
-  margin-top:15px;
-  padding:13px 25px;
-  border:0;
-  border-radius:25px;
-  cursor:pointer;
-}
-
-#closeImage{
-  position:absolute;
-  top:20px;
-  right:20px;
-  width:45px;
-  height:45px;
-  border:0;
-  border-radius:50%;
-  background:#222;
-  color:#fff;
-  font-size:20px;
-}
 </style>
 </head>
 
@@ -263,35 +203,27 @@ header{
 
   <header>Hello AI</header>
 
-  <!-- CHAT AREA -->
   <div id="chat" class="chat"></div>
 
-  <!-- INPUT AREA -->
   <div class="bar">
 
-    <button id="plus">+</button>
+    <button type="button" id="plus">+</button>
 
-    <!-- PLUS MENU -->
     <div id="plusMenu">
 
-      <button class="option" id="cameraBtn">
+      <button type="button" class="option" id="cameraBtn">
         <span class="icon">📷</span>
         <span>Camera</span>
       </button>
 
-      <button class="option" id="galleryBtn">
+      <button type="button" class="option" id="galleryBtn">
         <span class="icon">🖼️</span>
         <span>Gallery</span>
       </button>
 
-      <button class="option" id="documentBtn">
+      <button type="button" class="option" id="documentBtn">
         <span class="icon">📄</span>
         <span>Document</span>
-      </button>
-
-      <button class="option" id="createImageBtn">
-        <span class="icon">🎨</span>
-        <span>Create Image</span>
       </button>
 
     </div>
@@ -302,16 +234,14 @@ header{
       placeholder="Ask Hello AI anything..."
     >
 
-    <button id="send">➤</button>
+    <button type="button" id="send">➤</button>
 
-    <button id="mic">🎤</button>
+    <button type="button" id="mic">🎤</button>
 
   </div>
 
 </div>
 
-
-<!-- FILE INPUTS -->
 
 <input
   id="galleryInput"
@@ -336,11 +266,11 @@ header{
 >
 
 
-<!-- VOICE SCREEN -->
+<!-- VOICE -->
 
 <div id="voice">
 
-  <button id="close">✕</button>
+  <button type="button" id="close">✕</button>
 
   <div id="orb"></div>
 
@@ -348,27 +278,7 @@ header{
 
   <div id="voiceText"></div>
 
-  <button id="voiceMic">🎤</button>
-
-</div>
-
-
-<!-- CREATE IMAGE -->
-
-<div id="createImage">
-
-  <button id="closeImage">✕</button>
-
-  <h2>Create Image</h2>
-
-  <input
-    id="imagePrompt"
-    placeholder="Describe the image..."
-  >
-
-  <button id="createBtn">
-    Create
-  </button>
+  <button type="button" id="voiceMic">🎤</button>
 
 </div>
 
@@ -379,80 +289,43 @@ header{
    ELEMENTS
 ========================= */
 
-const question =
-  document.getElementById("question");
+const question = document.getElementById("question");
+const send = document.getElementById("send");
+const mic = document.getElementById("mic");
 
-const send =
-  document.getElementById("send");
+const plus = document.getElementById("plus");
+const plusMenu = document.getElementById("plusMenu");
+const chat = document.getElementById("chat");
 
-const mic =
-  document.getElementById("mic");
+const galleryInput = document.getElementById("galleryInput");
+const cameraInput = document.getElementById("cameraInput");
+const documentInput = document.getElementById("documentInput");
 
-const plus =
-  document.getElementById("plus");
-
-const plusMenu =
-  document.getElementById("plusMenu");
-
-const chat =
-  document.getElementById("chat");
-
-const galleryInput =
-  document.getElementById("galleryInput");
-
-const cameraInput =
-  document.getElementById("cameraInput");
-
-const documentInput =
-  document.getElementById("documentInput");
-
-const createImageBtn =
-  document.getElementById("createImageBtn");
-
-const createImage =
-  document.getElementById("createImage");
-
-const closeImage =
-  document.getElementById("closeImage");
-
-const voice =
-  document.getElementById("voice");
-
-const close =
-  document.getElementById("close");
-
-const voiceMic =
-  document.getElementById("voiceMic");
-
-const status =
-  document.getElementById("status");
-
-const voiceText =
-  document.getElementById("voiceText");
-
+const voice = document.getElementById("voice");
+const close = document.getElementById("close");
+const voiceMic = document.getElementById("voiceMic");
+const status = document.getElementById("status");
+const voiceText = document.getElementById("voiceText");
 
 let recorder = null;
 let chunks = [];
 
 
 /* =========================
-   ADD CHAT MESSAGE
+   ADD MESSAGE
 ========================= */
 
-function addMessage(text, type){
+function addMessage(text,type){
 
-  const div =
-    document.createElement("div");
+  const div = document.createElement("div");
 
-  div.className =
-    "message " + type;
+  div.className = "message " + type;
 
   div.innerText = text;
 
   chat.appendChild(div);
 
-  chat.scrollTop =
-    chat.scrollHeight;
+  chat.scrollTop = chat.scrollHeight;
 }
 
 
@@ -460,34 +333,23 @@ function addMessage(text, type){
    PLUS MENU
 ========================= */
 
-plus.onclick = (e)=>{
+plus.addEventListener("click",function(e){
 
   e.stopPropagation();
 
-  if(
-    plusMenu.style.display === "block"
-  ){
-
+  if(plusMenu.style.display === "block"){
     plusMenu.style.display = "none";
-
   }else{
-
     plusMenu.style.display = "block";
-
   }
 
-};
+});
 
 
-document.addEventListener("click",(e)=>{
+document.addEventListener("click",function(e){
 
-  if(
-    !plusMenu.contains(e.target) &&
-    e.target !== plus
-  ){
-
+  if(!plusMenu.contains(e.target) && e.target !== plus){
     plusMenu.style.display = "none";
-
   }
 
 });
@@ -497,116 +359,84 @@ document.addEventListener("click",(e)=>{
    GALLERY
 ========================= */
 
-document.getElementById(
-  "galleryBtn"
-).onclick = ()=>{
+document.getElementById("galleryBtn")
+.addEventListener("click",function(){
 
   plusMenu.style.display = "none";
 
   galleryInput.click();
 
-};
+});
 
 
-galleryInput.onchange = ()=>{
+galleryInput.addEventListener("change",function(){
 
-  if(galleryInput.files.length > 0){
-
-    const file =
-      galleryInput.files[0];
+  if(this.files.length > 0){
 
     addMessage(
-      "Selected image: " + file.name,
+      "Selected image: " + this.files[0].name,
       "user-message"
     );
 
   }
 
-};
+});
 
 
 /* =========================
    CAMERA
 ========================= */
 
-document.getElementById(
-  "cameraBtn"
-).onclick = ()=>{
+document.getElementById("cameraBtn")
+.addEventListener("click",function(){
 
   plusMenu.style.display = "none";
 
   cameraInput.click();
 
-};
+});
 
 
-cameraInput.onchange = ()=>{
+cameraInput.addEventListener("change",function(){
 
-  if(cameraInput.files.length > 0){
-
-    const file =
-      cameraInput.files[0];
+  if(this.files.length > 0){
 
     addMessage(
-      "Camera photo: " + file.name,
+      "Camera photo: " + this.files[0].name,
       "user-message"
     );
 
   }
 
-};
+});
 
 
 /* =========================
    DOCUMENT
 ========================= */
 
-document.getElementById(
-  "documentBtn"
-).onclick = ()=>{
+document.getElementById("documentBtn")
+.addEventListener("click",function(){
 
   plusMenu.style.display = "none";
 
   documentInput.click();
 
-};
+});
 
 
-documentInput.onchange = ()=>{
+documentInput.addEventListener("change",function(){
 
-  if(documentInput.files.length > 0){
-
-    const file =
-      documentInput.files[0];
+  if(this.files.length > 0){
 
     addMessage(
-      "Document: " + file.name,
+      "Document: " + this.files[0].name,
       "user-message"
     );
 
   }
 
-};
-
-
-/* =========================
-   CREATE IMAGE
-========================= */
-
-createImageBtn.onclick = ()=>{
-
-  plusMenu.style.display = "none";
-
-  createImage.style.display = "flex";
-
-};
-
-
-closeImage.onclick = ()=>{
-
-  createImage.style.display = "none";
-
-};
+});
 
 
 /* =========================
@@ -617,16 +447,16 @@ async function askAI(text){
 
   try{
 
-    const r =
+    const response =
       await fetch(
-        "/ask?time=" + Date.now(),
+        "/ask",
         {
           method:"POST",
-          cache:"no-store",
+
           headers:{
-            "Content-Type":
-              "application/json"
+            "Content-Type":"application/json"
           },
+
           body:JSON.stringify({
             question:text
           })
@@ -635,7 +465,7 @@ async function askAI(text){
 
 
     const data =
-      await r.json();
+      await response.json();
 
 
     if(data.error){
@@ -653,11 +483,10 @@ async function askAI(text){
     return data.answer;
 
 
-  }catch(e){
+  }catch(error){
 
     addMessage(
-      "Connection error: " +
-      e.message,
+      "Connection error: " + error.message,
       "ai-message"
     );
 
@@ -669,81 +498,76 @@ async function askAI(text){
 
 
 /* =========================
-   SEND TEXT MESSAGE
+   SEND MESSAGE
 ========================= */
 
-send.onclick = async ()=>{
+send.addEventListener(
+  "click",
+  async function(){
 
-  const text =
-    question.value.trim();
-
-  if(!text) return;
-
-
-  /* SHOW USER QUESTION */
-
-  addMessage(
-    text,
-    "user-message"
-  );
+    const text =
+      question.value.trim();
 
 
-  question.value = "";
+    if(!text) return;
 
-
-  /* AI THINKING */
-
-  const thinking =
-    document.createElement("div");
-
-  thinking.className =
-    "message ai-message";
-
-  thinking.innerText =
-    "Thinking...";
-
-  chat.appendChild(thinking);
-
-  chat.scrollTop =
-    chat.scrollHeight;
-
-
-  /* GET ANSWER */
-
-  const answer =
-    await askAI(text);
-
-
-  /* REMOVE THINKING */
-
-  if(thinking.parentNode){
-
-    thinking.remove();
-
-  }
-
-
-  /* SHOW AI ANSWER */
-
-  if(answer){
 
     addMessage(
-      answer,
-      "ai-message"
+      text,
+      "user-message"
     );
 
+
+    question.value = "";
+
+
+    const thinking =
+      document.createElement("div");
+
+    thinking.className =
+      "message ai-message";
+
+    thinking.innerText =
+      "Thinking...";
+
+    chat.appendChild(
+      thinking
+    );
+
+
+    const answer =
+      await askAI(text);
+
+
+    if(thinking.parentNode){
+      thinking.remove();
+    }
+
+
+    if(answer){
+
+      addMessage(
+        answer,
+        "ai-message"
+      );
+
+    }
+
   }
+);
 
-};
 
-
-/* ENTER KEY */
+/* =========================
+   ENTER KEY
+========================= */
 
 question.addEventListener(
   "keydown",
-  (e)=>{
+  function(e){
 
     if(e.key === "Enter"){
+
+      e.preventDefault();
 
       send.click();
 
@@ -757,20 +581,23 @@ question.addEventListener(
    OPEN VOICE
 ========================= */
 
-mic.onclick = ()=>{
+mic.addEventListener(
+  "click",
+  function(){
 
-  speechSynthesis.cancel();
+    speechSynthesis.cancel();
 
-  voice.style.display =
-    "flex";
+    voice.style.display =
+      "flex";
 
-  voiceText.innerText =
-    "";
+    voiceText.innerText =
+      "";
 
-  status.innerText =
-    "Tap microphone";
+    status.innerText =
+      "Tap microphone";
 
-};
+  }
+);
 
 
 /* =========================
@@ -806,12 +633,9 @@ async function startRecording(){
 
 
     recorder.ondataavailable =
-      (e)=>{
+      function(e){
 
-        if(
-          e.data &&
-          e.data.size > 0
-        ){
+        if(e.data && e.data.size > 0){
 
           chunks.push(e.data);
 
@@ -825,39 +649,25 @@ async function startRecording(){
 
 
     status.innerText =
-      "Get ready...";
+      "Listening...";
+
+    voiceText.innerText =
+      "Speak now";
+
+    voiceMic.innerText =
+      "⏹";
 
 
-    setTimeout(()=>{
-
-      if(!recorder) return;
+    recorder.start();
 
 
-      recorder.start();
-
-
-      status.innerText =
-        "Listening...";
-
-
-      voiceText.innerText =
-        "Speak now";
-
-
-      voiceMic.innerText =
-        "⏹";
-
-
-    },500);
-
-
-  }catch(e){
+  }catch(error){
 
     status.innerText =
       "Microphone error";
 
     voiceText.innerText =
-      e.message;
+      error.message;
 
   }
 
@@ -873,9 +683,7 @@ function stopRecording(){
   if(!recorder) return;
 
 
-  if(
-    recorder.state === "recording"
-  ){
+  if(recorder.state === "recording"){
 
     recorder.stop();
 
@@ -886,9 +694,11 @@ function stopRecording(){
 
     recorder.stream
     .getTracks()
-    .forEach(
-      track=>track.stop()
-    );
+    .forEach(function(track){
+
+      track.stop();
+
+    });
 
   }
 
@@ -903,25 +713,28 @@ function stopRecording(){
 
 
 /* =========================
-   VOICE MIC
+   VOICE BUTTON
 ========================= */
 
-voiceMic.onclick = ()=>{
+voiceMic.addEventListener(
+  "click",
+  function(){
 
-  if(
-    recorder &&
-    recorder.state === "recording"
-  ){
+    if(
+      recorder &&
+      recorder.state === "recording"
+    ){
 
-    stopRecording();
+      stopRecording();
 
-  }else{
+    }else{
 
-    startRecording();
+      startRecording();
+
+    }
 
   }
-
-};
+);
 
 
 /* =========================
@@ -948,7 +761,9 @@ async function sendAudio(){
     const blob =
       new Blob(
         chunks,
-        {type:"audio/webm"}
+        {
+          type:"audio/webm"
+        }
       );
 
 
@@ -969,20 +784,18 @@ async function sendAudio(){
       "Converting voice...";
 
 
-    const r =
+    const response =
       await fetch(
-        "/transcribe?time=" +
-        Date.now(),
+        "/transcribe",
         {
           method:"POST",
-          cache:"no-store",
           body:form
         }
       );
 
 
     const data =
-      await r.json();
+      await response.json();
 
 
     if(data.error){
@@ -1015,11 +828,8 @@ async function sendAudio(){
     }
 
 
-    /* SHOW TRANSCRIBED QUESTION */
-
     voiceText.innerText =
       text;
-
 
     status.innerText =
       "Thinking...";
@@ -1028,13 +838,13 @@ async function sendAudio(){
     await voiceAsk(text);
 
 
-  }catch(e){
+  }catch(error){
 
     status.innerText =
       "Error";
 
     voiceText.innerText =
-      e.message;
+      error.message;
 
   }
 
@@ -1049,17 +859,16 @@ async function voiceAsk(text){
 
   try{
 
-    const r =
+    const response =
       await fetch(
-        "/ask?time=" +
-        Date.now(),
+        "/ask",
         {
           method:"POST",
-          cache:"no-store",
+
           headers:{
-            "Content-Type":
-              "application/json"
+            "Content-Type":"application/json"
           },
+
           body:JSON.stringify({
             question:text
           })
@@ -1068,7 +877,7 @@ async function voiceAsk(text){
 
 
     const data =
-      await r.json();
+      await response.json();
 
 
     if(data.error){
@@ -1085,24 +894,18 @@ async function voiceAsk(text){
 
 
     const answer =
-      data.answer ||
-      "No answer";
+      data.answer || "No answer";
 
 
     status.innerText =
       "Hello AI";
 
-
     voiceText.innerText =
       answer;
 
 
-    /* SPOKEN ANSWER */
-
     const speech =
-      new SpeechSynthesisUtterance(
-        answer
-      );
+      new SpeechSynthesisUtterance(answer);
 
 
     speech.lang =
@@ -1122,13 +925,13 @@ async function voiceAsk(text){
     );
 
 
-  }catch(e){
+  }catch(error){
 
     status.innerText =
       "AI error";
 
     voiceText.innerText =
-      e.message;
+      error.message;
 
   }
 
@@ -1139,38 +942,43 @@ async function voiceAsk(text){
    CLOSE VOICE
 ========================= */
 
-close.onclick = ()=>{
+close.addEventListener(
+  "click",
+  function(){
 
-  if(
-    recorder &&
-    recorder.state !== "inactive"
-  ){
+    if(
+      recorder &&
+      recorder.state !== "inactive"
+    ){
 
-    recorder.stop();
+      recorder.stop();
+
+    }
+
+
+    if(
+      recorder &&
+      recorder.stream
+    ){
+
+      recorder.stream
+      .getTracks()
+      .forEach(function(track){
+
+        track.stop();
+
+      });
+
+    }
+
+
+    speechSynthesis.cancel();
+
+    voice.style.display =
+      "none";
 
   }
-
-
-  if(
-    recorder &&
-    recorder.stream
-  ){
-
-    recorder.stream
-    .getTracks()
-    .forEach(
-      track=>track.stop()
-    );
-
-  }
-
-
-  speechSynthesis.cancel();
-
-  voice.style.display =
-    "none";
-
-};
+);
 
 </script>
 
