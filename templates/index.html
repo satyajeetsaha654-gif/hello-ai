@@ -44,6 +44,7 @@ header{
   border-radius:18px;
   line-height:1.5;
   word-wrap:break-word;
+  white-space:pre-wrap;
 }
 
 .user-message{
@@ -176,11 +177,17 @@ header{
 }
 
 #voiceText{
-  width:85%;
-  max-width:700px;
+  width:90%;
+  max-width:900px;
+  height:45vh;
+  overflow-y:auto;
   text-align:center;
   font-size:19px;
-  line-height:1.5;
+  line-height:1.6;
+  padding:20px;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  scroll-behavior:smooth;
 }
 
 #voiceMic{
@@ -266,7 +273,9 @@ header{
 >
 
 
-<!-- VOICE -->
+<!-- =========================
+     VOICE SCREEN
+========================= -->
 
 <div id="voice">
 
@@ -297,18 +306,102 @@ const plus = document.getElementById("plus");
 const plusMenu = document.getElementById("plusMenu");
 const chat = document.getElementById("chat");
 
-const galleryInput = document.getElementById("galleryInput");
-const cameraInput = document.getElementById("cameraInput");
-const documentInput = document.getElementById("documentInput");
+const galleryInput =
+  document.getElementById("galleryInput");
 
-const voice = document.getElementById("voice");
-const close = document.getElementById("close");
-const voiceMic = document.getElementById("voiceMic");
-const status = document.getElementById("status");
-const voiceText = document.getElementById("voiceText");
+const cameraInput =
+  document.getElementById("cameraInput");
+
+const documentInput =
+  document.getElementById("documentInput");
+
+const voice =
+  document.getElementById("voice");
+
+const close =
+  document.getElementById("close");
+
+const voiceMic =
+  document.getElementById("voiceMic");
+
+const status =
+  document.getElementById("status");
+
+const voiceText =
+  document.getElementById("voiceText");
+
 
 let recorder = null;
 let chunks = [];
+
+let answerTimer = null;
+
+
+/* =========================
+   CLEAN TEXT
+========================= */
+
+function cleanDisplayText(text){
+
+  if(!text){
+    return "";
+  }
+
+  let clean = String(text);
+
+  /*
+     Remove repeated stars
+     Example:
+     *****answer*****
+  */
+
+  clean = clean.replace(/\*{2,}/g,"");
+
+
+  /*
+     Remove repeated slashes
+  */
+
+  clean = clean.replace(/\/{2,}/g,"");
+
+
+  /*
+     Remove repeated underscores
+  */
+
+  clean = clean.replace(/_{2,}/g,"");
+
+
+  /*
+     Remove Markdown bold markers
+  */
+
+  clean = clean.replace(/\*\*/g,"");
+  clean = clean.replace(/__/g,"");
+
+
+  /*
+     Remove unnecessary spaces
+  */
+
+  clean = clean.replace(
+    /[ \t]{2,}/g,
+    " "
+  );
+
+
+  /*
+     Keep normal paragraph spacing
+  */
+
+  clean = clean.replace(
+    /\n{3,}/g,
+    "\n\n"
+  );
+
+
+  return clean.trim();
+}
 
 
 /* =========================
@@ -317,15 +410,19 @@ let chunks = [];
 
 function addMessage(text,type){
 
-  const div = document.createElement("div");
+  const div =
+    document.createElement("div");
 
-  div.className = "message " + type;
+  div.className =
+    "message " + type;
 
-  div.innerText = text;
+  div.innerText =
+    cleanDisplayText(text);
 
   chat.appendChild(div);
 
-  chat.scrollTop = chat.scrollHeight;
+  chat.scrollTop =
+    chat.scrollHeight;
 }
 
 
@@ -333,110 +430,158 @@ function addMessage(text,type){
    PLUS MENU
 ========================= */
 
-plus.addEventListener("click",function(e){
+plus.addEventListener(
+  "click",
+  function(e){
 
-  e.stopPropagation();
+    e.stopPropagation();
 
-  if(plusMenu.style.display === "block"){
-    plusMenu.style.display = "none";
-  }else{
-    plusMenu.style.display = "block";
+    if(
+      plusMenu.style.display ===
+      "block"
+    ){
+
+      plusMenu.style.display =
+        "none";
+
+    }else{
+
+      plusMenu.style.display =
+        "block";
+
+    }
+
   }
+);
 
-});
 
+document.addEventListener(
+  "click",
+  function(e){
 
-document.addEventListener("click",function(e){
+    if(
+      !plusMenu.contains(e.target) &&
+      e.target !== plus
+    ){
 
-  if(!plusMenu.contains(e.target) && e.target !== plus){
-    plusMenu.style.display = "none";
+      plusMenu.style.display =
+        "none";
+
+    }
+
   }
-
-});
+);
 
 
 /* =========================
    GALLERY
 ========================= */
 
-document.getElementById("galleryBtn")
-.addEventListener("click",function(){
+document.getElementById(
+  "galleryBtn"
+).addEventListener(
+  "click",
+  function(){
 
-  plusMenu.style.display = "none";
+    plusMenu.style.display =
+      "none";
 
-  galleryInput.click();
-
-});
-
-
-galleryInput.addEventListener("change",function(){
-
-  if(this.files.length > 0){
-
-    addMessage(
-      "Selected image: " + this.files[0].name,
-      "user-message"
-    );
+    galleryInput.click();
 
   }
+);
 
-});
+
+galleryInput.addEventListener(
+  "change",
+  function(){
+
+    if(this.files.length > 0){
+
+      addMessage(
+        "Selected image: " +
+        this.files[0].name,
+        "user-message"
+      );
+
+    }
+
+  }
+);
 
 
 /* =========================
    CAMERA
 ========================= */
 
-document.getElementById("cameraBtn")
-.addEventListener("click",function(){
+document.getElementById(
+  "cameraBtn"
+).addEventListener(
+  "click",
+  function(){
 
-  plusMenu.style.display = "none";
+    plusMenu.style.display =
+      "none";
 
-  cameraInput.click();
-
-});
-
-
-cameraInput.addEventListener("change",function(){
-
-  if(this.files.length > 0){
-
-    addMessage(
-      "Camera photo: " + this.files[0].name,
-      "user-message"
-    );
+    cameraInput.click();
 
   }
+);
 
-});
+
+cameraInput.addEventListener(
+  "change",
+  function(){
+
+    if(this.files.length > 0){
+
+      addMessage(
+        "Camera photo: " +
+        this.files[0].name,
+        "user-message"
+      );
+
+    }
+
+  }
+);
 
 
 /* =========================
    DOCUMENT
 ========================= */
 
-document.getElementById("documentBtn")
-.addEventListener("click",function(){
+document.getElementById(
+  "documentBtn"
+).addEventListener(
+  "click",
+  function(){
 
-  plusMenu.style.display = "none";
+    plusMenu.style.display =
+      "none";
 
-  documentInput.click();
-
-});
-
-
-documentInput.addEventListener("change",function(){
-
-  if(this.files.length > 0){
-
-    addMessage(
-      "Document: " + this.files[0].name,
-      "user-message"
-    );
+    documentInput.click();
 
   }
+);
 
-});
+
+documentInput.addEventListener(
+  "change",
+  function(){
+
+    if(this.files.length > 0){
+
+      addMessage(
+        "Document: " +
+        this.files[0].name,
+        "user-message"
+      );
+
+    }
+
+  }
+);
 
 
 /* =========================
@@ -454,7 +599,8 @@ async function askAI(text){
           method:"POST",
 
           headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+              "application/json"
           },
 
           body:JSON.stringify({
@@ -471,27 +617,29 @@ async function askAI(text){
     if(data.error){
 
       addMessage(
-        "Error: " + data.error,
+        "Error: " +
+        data.error,
         "ai-message"
       );
 
       return null;
-
     }
 
 
-    return data.answer;
+    return cleanDisplayText(
+      data.answer
+    );
 
 
   }catch(error){
 
     addMessage(
-      "Connection error: " + error.message,
+      "Connection error: " +
+      error.message,
       "ai-message"
     );
 
     return null;
-
   }
 
 }
@@ -509,7 +657,9 @@ send.addEventListener(
       question.value.trim();
 
 
-    if(!text) return;
+    if(!text){
+      return;
+    }
 
 
     addMessage(
@@ -518,17 +668,23 @@ send.addEventListener(
     );
 
 
-    question.value = "";
+    question.value =
+      "";
 
 
     const thinking =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     thinking.className =
       "message ai-message";
 
+
     thinking.innerText =
       "Thinking...";
+
 
     chat.appendChild(
       thinking
@@ -540,7 +696,9 @@ send.addEventListener(
 
 
     if(thinking.parentNode){
+
       thinking.remove();
+
     }
 
 
@@ -587,11 +745,23 @@ mic.addEventListener(
 
     speechSynthesis.cancel();
 
+
+    if(answerTimer){
+
+      clearInterval(answerTimer);
+
+      answerTimer = null;
+
+    }
+
+
     voice.style.display =
       "flex";
 
+
     voiceText.innerText =
       "";
+
 
     status.innerText =
       "Tap microphone";
@@ -612,7 +782,8 @@ async function startRecording(){
 
 
     const stream =
-      await navigator.mediaDevices
+      await navigator
+      .mediaDevices
       .getUserMedia({
 
         audio:{
@@ -629,15 +800,22 @@ async function startRecording(){
 
 
     recorder =
-      new MediaRecorder(stream);
+      new MediaRecorder(
+        stream
+      );
 
 
     recorder.ondataavailable =
       function(e){
 
-        if(e.data && e.data.size > 0){
+        if(
+          e.data &&
+          e.data.size > 0
+        ){
 
-          chunks.push(e.data);
+          chunks.push(
+            e.data
+          );
 
         }
 
@@ -651,8 +829,10 @@ async function startRecording(){
     status.innerText =
       "Listening...";
 
+
     voiceText.innerText =
       "Speak now";
+
 
     voiceMic.innerText =
       "⏹";
@@ -665,6 +845,7 @@ async function startRecording(){
 
     status.innerText =
       "Microphone error";
+
 
     voiceText.innerText =
       error.message;
@@ -680,10 +861,15 @@ async function startRecording(){
 
 function stopRecording(){
 
-  if(!recorder) return;
+  if(!recorder){
+    return;
+  }
 
 
-  if(recorder.state === "recording"){
+  if(
+    recorder.state ===
+    "recording"
+  ){
 
     recorder.stop();
 
@@ -694,17 +880,20 @@ function stopRecording(){
 
     recorder.stream
     .getTracks()
-    .forEach(function(track){
+    .forEach(
+      function(track){
 
-      track.stop();
+        track.stop();
 
-    });
+      }
+    );
 
   }
 
 
   voiceMic.innerText =
     "🎤";
+
 
   status.innerText =
     "Processing...";
@@ -722,7 +911,8 @@ voiceMic.addEventListener(
 
     if(
       recorder &&
-      recorder.state === "recording"
+      recorder.state ===
+      "recording"
     ){
 
       stopRecording();
@@ -750,11 +940,11 @@ async function sendAudio(){
       status.innerText =
         "No audio";
 
+
       voiceText.innerText =
         "Please speak again.";
 
       return;
-
     }
 
 
@@ -762,7 +952,8 @@ async function sendAudio(){
       new Blob(
         chunks,
         {
-          type:"audio/webm"
+          type:
+            "audio/webm"
         }
       );
 
@@ -803,16 +994,17 @@ async function sendAudio(){
       status.innerText =
         "Error";
 
+
       voiceText.innerText =
         data.error;
 
       return;
-
     }
 
 
     const text =
-      (data.text || "").trim();
+      (data.text || "")
+      .trim();
 
 
     if(!text){
@@ -820,16 +1012,17 @@ async function sendAudio(){
       status.innerText =
         "No speech detected";
 
+
       voiceText.innerText =
         "Please speak again.";
 
       return;
-
     }
 
 
     voiceText.innerText =
-      text;
+      cleanDisplayText(text);
+
 
     status.innerText =
       "Thinking...";
@@ -843,10 +1036,125 @@ async function sendAudio(){
     status.innerText =
       "Error";
 
+
     voiceText.innerText =
       error.message;
 
   }
+
+}
+
+
+/* =========================
+   DETECT LANGUAGE
+========================= */
+
+function detectLanguage(text){
+
+  /*
+     Bengali
+  */
+
+  if(
+    /[\u0980-\u09FF]/.test(text)
+  ){
+
+    return "bn-IN";
+
+  }
+
+
+  /*
+     Hindi / Devanagari
+  */
+
+  if(
+    /[\u0900-\u097F]/.test(text)
+  ){
+
+    return "hi-IN";
+
+  }
+
+
+  /*
+     Default English
+  */
+
+  return "en-IN";
+}
+
+
+/* =========================
+   SHOW ANSWER CHARACTER BY
+   CHARACTER
+========================= */
+
+function showAnswerSlowly(answer){
+
+  if(answerTimer){
+
+    clearInterval(
+      answerTimer
+    );
+
+    answerTimer = null;
+
+  }
+
+
+  voiceText.innerText =
+    "";
+
+
+  let index = 0;
+
+
+  /*
+     Speed of text display.
+     Smaller number = faster.
+  */
+
+  const speed = 35;
+
+
+  answerTimer =
+    setInterval(
+      function(){
+
+        if(index >= answer.length){
+
+          clearInterval(
+            answerTimer
+          );
+
+          answerTimer = null;
+
+          voiceText.scrollTop =
+            voiceText.scrollHeight;
+
+          return;
+
+        }
+
+
+        voiceText.innerText +=
+          answer[index];
+
+
+        index++;
+
+
+        /*
+           Automatic scrolling
+        */
+
+        voiceText.scrollTop =
+          voiceText.scrollHeight;
+
+      },
+      speed
+    );
 
 }
 
@@ -866,7 +1174,8 @@ async function voiceAsk(text){
           method:"POST",
 
           headers:{
-            "Content-Type":"application/json"
+            "Content-Type":
+              "application/json"
           },
 
           body:JSON.stringify({
@@ -885,6 +1194,7 @@ async function voiceAsk(text){
       status.innerText =
         "AI error";
 
+
       voiceText.innerText =
         data.error;
 
@@ -894,31 +1204,98 @@ async function voiceAsk(text){
 
 
     const answer =
-      data.answer || "No answer";
+      cleanDisplayText(
+        data.answer ||
+        "No answer"
+      );
 
 
     status.innerText =
       "Hello AI";
 
-    voiceText.innerText =
-      answer;
 
+    /*
+       Show answer gradually
+    */
+
+    showAnswerSlowly(
+      answer
+    );
+
+
+    /*
+       Detect language
+    */
+
+    const language =
+      detectLanguage(
+        answer
+      );
+
+
+    /*
+       Text to speech
+    */
 
     const speech =
-      new SpeechSynthesisUtterance(answer);
+      new SpeechSynthesisUtterance(
+        answer
+      );
 
 
     speech.lang =
-      "en-IN";
+      language;
+
 
     speech.rate =
       1;
+
 
     speech.pitch =
       1;
 
 
     speechSynthesis.cancel();
+
+
+    /*
+       When speech ends,
+       show complete answer
+    */
+
+    speech.onend =
+      function(){
+
+        if(answerTimer){
+
+          clearInterval(
+            answerTimer
+          );
+
+          answerTimer =
+            null;
+
+        }
+
+
+        voiceText.innerText =
+          answer;
+
+
+        voiceText.scrollTop =
+          voiceText.scrollHeight;
+
+      };
+
+
+    speech.onerror =
+      function(){
+
+        status.innerText =
+          "Voice reply error";
+
+      };
+
 
     speechSynthesis.speak(
       speech
@@ -929,6 +1306,7 @@ async function voiceAsk(text){
 
     status.innerText =
       "AI error";
+
 
     voiceText.innerText =
       error.message;
@@ -948,7 +1326,8 @@ close.addEventListener(
 
     if(
       recorder &&
-      recorder.state !== "inactive"
+      recorder.state !==
+      "inactive"
     ){
 
       recorder.stop();
@@ -963,16 +1342,31 @@ close.addEventListener(
 
       recorder.stream
       .getTracks()
-      .forEach(function(track){
+      .forEach(
+        function(track){
 
-        track.stop();
+          track.stop();
 
-      });
+        }
+      );
+
+    }
+
+
+    if(answerTimer){
+
+      clearInterval(
+        answerTimer
+      );
+
+      answerTimer =
+        null;
 
     }
 
 
     speechSynthesis.cancel();
+
 
     voice.style.display =
       "none";
