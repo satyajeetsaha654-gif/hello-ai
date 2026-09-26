@@ -7,43 +7,56 @@
 <title>Hello AI</title>
 
 <style>
+
 *{
   box-sizing:border-box;
 }
 
+html,
 body{
   margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
   background:#000;
   color:#fff;
   font-family:Arial,sans-serif;
+  overflow:hidden;
 }
 
 #app{
-  min-height:100vh;
+  width:100%;
+  height:100vh;
+  height:100dvh;
   display:flex;
   flex-direction:column;
 }
 
 header{
+  flex-shrink:0;
   text-align:center;
-  padding:22px;
-  font-size:28px;
+  padding:16px 10px;
+  font-size:25px;
   font-weight:bold;
 }
 
 .chat{
   flex:1;
-  padding:20px;
+  min-height:0;
+  padding:12px;
   overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
 }
 
 .message{
-  max-width:80%;
-  padding:11px 15px;
-  margin:10px 0;
+  max-width:85%;
+  padding:11px 14px;
+  margin:9px 0;
   border-radius:18px;
   line-height:1.5;
   word-wrap:break-word;
+  overflow-wrap:anywhere;
   white-space:pre-wrap;
 }
 
@@ -59,31 +72,36 @@ header{
 
 .bar{
   position:relative;
+  flex-shrink:0;
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:12px;
+  gap:7px;
+  padding:9px;
+  padding-bottom:calc(9px + env(safe-area-inset-bottom));
   background:#111;
 }
 
 .bar input{
+  min-width:0;
   flex:1;
-  padding:14px 16px;
+  height:46px;
+  padding:12px 15px;
   border:1px solid #444;
-  border-radius:25px;
+  border-radius:24px;
   background:#222;
   color:#fff;
   outline:none;
-  font-size:15px;
+  font-size:16px;
 }
 
 .bar button{
-  width:46px;
-  height:46px;
+  flex-shrink:0;
+  width:44px;
+  height:44px;
   border:0;
   border-radius:50%;
   cursor:pointer;
-  font-size:21px;
+  font-size:20px;
 }
 
 #plus{
@@ -103,9 +121,10 @@ header{
 
 #plusMenu{
   position:absolute;
-  left:12px;
-  bottom:70px;
+  left:9px;
+  bottom:65px;
   width:210px;
+  max-width:calc(100vw - 18px);
   padding:8px;
   background:#1b1b1b;
   border:1px solid #444;
@@ -135,74 +154,199 @@ header{
 }
 
 .icon{
-  font-size:23px;
+  font-size:22px;
 }
 
 #voice{
   position:fixed;
   inset:0;
+  width:100%;
+  height:100%;
+  height:100dvh;
   background:#000;
   display:none;
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  padding:20px;
   z-index:1000;
 }
 
 #close{
   position:absolute;
-  top:20px;
-  right:20px;
-  width:45px;
-  height:45px;
+  top:15px;
+  right:15px;
+  width:44px;
+  height:44px;
   border:0;
   border-radius:50%;
   background:#222;
   color:#fff;
-  font-size:20px;
+  font-size:19px;
 }
 
 #orb{
-  width:170px;
-  height:170px;
+  width:145px;
+  height:145px;
+  flex-shrink:0;
   border-radius:50%;
   background:radial-gradient(circle,#fff,#555,#111);
-  box-shadow:0 0 50px #777;
-  margin-bottom:30px;
+  box-shadow:0 0 45px #777;
+  margin-bottom:24px;
 }
 
 #status{
-  font-size:20px;
-  margin-bottom:15px;
+  font-size:18px;
+  margin-bottom:10px;
+  text-align:center;
 }
 
 #voiceText{
-  width:90%;
+  width:100%;
   max-width:900px;
-  height:45vh;
+  height:42vh;
+  max-height:420px;
   overflow-y:auto;
+  overflow-x:hidden;
   text-align:center;
-  font-size:19px;
+  font-size:18px;
   line-height:1.6;
-  padding:20px;
+  padding:15px;
   white-space:pre-wrap;
   word-wrap:break-word;
+  overflow-wrap:anywhere;
   scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
 }
 
 #voiceMic{
-  margin-top:30px;
-  width:75px;
-  height:75px;
+  flex-shrink:0;
+  margin-top:20px;
+  width:70px;
+  height:70px;
   border:0;
   border-radius:50%;
   background:#fff;
   color:#000;
-  font-size:28px;
+  font-size:27px;
   cursor:pointer;
 }
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width:600px){
+
+  header{
+    padding:13px 8px;
+    font-size:22px;
+  }
+
+  .chat{
+    padding:10px 9px;
+  }
+
+  .message{
+    max-width:90%;
+    font-size:15px;
+    padding:10px 13px;
+    margin:8px 0;
+  }
+
+  .bar{
+    gap:6px;
+    padding:7px;
+    padding-bottom:calc(7px + env(safe-area-inset-bottom));
+  }
+
+  .bar input{
+    height:44px;
+    font-size:15px;
+    padding:10px 13px;
+  }
+
+  .bar button{
+    width:42px;
+    height:42px;
+    font-size:19px;
+  }
+
+  #plusMenu{
+    bottom:62px;
+    width:200px;
+  }
+
+  .option{
+    height:48px;
+    font-size:15px;
+  }
+
+  #orb{
+    width:125px;
+    height:125px;
+    margin-bottom:20px;
+  }
+
+  #status{
+    font-size:17px;
+  }
+
+  #voiceText{
+    height:45vh;
+    font-size:17px;
+    padding:12px;
+  }
+
+  #voiceMic{
+    width:66px;
+    height:66px;
+    margin-top:16px;
+  }
+
+}
+
+
+/* =========================
+   VERY SMALL PHONES
+========================= */
+
+@media (max-width:380px){
+
+  header{
+    font-size:20px;
+    padding:10px 6px;
+  }
+
+  .bar{
+    gap:4px;
+  }
+
+  .bar button{
+    width:39px;
+    height:39px;
+  }
+
+  .bar input{
+    height:41px;
+    font-size:14px;
+  }
+
+  #orb{
+    width:110px;
+    height:110px;
+  }
+
+  #voiceText{
+    font-size:16px;
+  }
+
+}
+
 </style>
 </head>
+
 
 <body>
 
@@ -298,13 +442,23 @@ header{
    ELEMENTS
 ========================= */
 
-const question = document.getElementById("question");
-const send = document.getElementById("send");
-const mic = document.getElementById("mic");
+const question =
+  document.getElementById("question");
 
-const plus = document.getElementById("plus");
-const plusMenu = document.getElementById("plusMenu");
-const chat = document.getElementById("chat");
+const send =
+  document.getElementById("send");
+
+const mic =
+  document.getElementById("mic");
+
+const plus =
+  document.getElementById("plus");
+
+const plusMenu =
+  document.getElementById("plusMenu");
+
+const chat =
+  document.getElementById("chat");
 
 const galleryInput =
   document.getElementById("galleryInput");
@@ -332,6 +486,7 @@ const voiceText =
 
 
 let recorder = null;
+
 let chunks = [];
 
 let answerTimer = null;
@@ -349,56 +504,40 @@ function cleanDisplayText(text){
 
   let clean = String(text);
 
-  /*
-     Remove repeated stars
-     Example:
-     *****answer*****
-  */
+  clean = clean.replace(
+    /\*{2,}/g,
+    ""
+  );
 
-  clean = clean.replace(/\*{2,}/g,"");
+  clean = clean.replace(
+    /\/{2,}/g,
+    ""
+  );
 
+  clean = clean.replace(
+    /_{2,}/g,
+    ""
+  );
 
-  /*
-     Remove repeated slashes
-  */
+  clean = clean.replace(
+    /\*\*/g,
+    ""
+  );
 
-  clean = clean.replace(/\/{2,}/g,"");
-
-
-  /*
-     Remove repeated underscores
-  */
-
-  clean = clean.replace(/_{2,}/g,"");
-
-
-  /*
-     Remove Markdown bold markers
-  */
-
-  clean = clean.replace(/\*\*/g,"");
-  clean = clean.replace(/__/g,"");
-
-
-  /*
-     Remove unnecessary spaces
-  */
+  clean = clean.replace(
+    /__/g,
+    ""
+  );
 
   clean = clean.replace(
     /[ \t]{2,}/g,
     " "
   );
 
-
-  /*
-     Keep normal paragraph spacing
-  */
-
   clean = clean.replace(
     /\n{3,}/g,
     "\n\n"
   );
-
 
   return clean.trim();
 }
@@ -609,10 +748,8 @@ async function askAI(text){
         }
       );
 
-
     const data =
       await response.json();
-
 
     if(data.error){
 
@@ -625,11 +762,9 @@ async function askAI(text){
       return null;
     }
 
-
     return cleanDisplayText(
       data.answer
     );
-
 
   }catch(error){
 
@@ -656,51 +791,41 @@ send.addEventListener(
     const text =
       question.value.trim();
 
-
     if(!text){
       return;
     }
-
 
     addMessage(
       text,
       "user-message"
     );
 
-
     question.value =
       "";
-
 
     const thinking =
       document.createElement(
         "div"
       );
 
-
     thinking.className =
       "message ai-message";
 
-
     thinking.innerText =
       "Thinking...";
-
 
     chat.appendChild(
       thinking
     );
 
-
     const answer =
       await askAI(text);
-
 
     if(thinking.parentNode){
 
       thinking.remove();
 
     }
-
 
     if(answer){
 
@@ -745,23 +870,21 @@ mic.addEventListener(
 
     speechSynthesis.cancel();
 
-
     if(answerTimer){
 
-      clearInterval(answerTimer);
+      clearInterval(
+        answerTimer
+      );
 
       answerTimer = null;
 
     }
 
-
     voice.style.display =
       "flex";
 
-
     voiceText.innerText =
       "";
-
 
     status.innerText =
       "Tap microphone";
@@ -780,7 +903,6 @@ async function startRecording(){
 
     speechSynthesis.cancel();
 
-
     const stream =
       await navigator
       .mediaDevices
@@ -795,15 +917,12 @@ async function startRecording(){
 
       });
 
-
     chunks = [];
-
 
     recorder =
       new MediaRecorder(
         stream
       );
-
 
     recorder.ondataavailable =
       function(e){
@@ -821,31 +940,24 @@ async function startRecording(){
 
       };
 
-
     recorder.onstop =
       sendAudio;
-
 
     status.innerText =
       "Listening...";
 
-
     voiceText.innerText =
       "Speak now";
-
 
     voiceMic.innerText =
       "⏹";
 
-
     recorder.start();
-
 
   }catch(error){
 
     status.innerText =
       "Microphone error";
-
 
     voiceText.innerText =
       error.message;
@@ -865,7 +977,6 @@ function stopRecording(){
     return;
   }
 
-
   if(
     recorder.state ===
     "recording"
@@ -874,7 +985,6 @@ function stopRecording(){
     recorder.stop();
 
   }
-
 
   if(recorder.stream){
 
@@ -890,10 +1000,8 @@ function stopRecording(){
 
   }
 
-
   voiceMic.innerText =
     "🎤";
-
 
   status.innerText =
     "Processing...";
@@ -940,13 +1048,11 @@ async function sendAudio(){
       status.innerText =
         "No audio";
 
-
       voiceText.innerText =
         "Please speak again.";
 
       return;
     }
-
 
     const blob =
       new Blob(
@@ -957,10 +1063,8 @@ async function sendAudio(){
         }
       );
 
-
     const form =
       new FormData();
-
 
     form.append(
       "audio",
@@ -970,10 +1074,8 @@ async function sendAudio(){
       ".webm"
     );
 
-
     status.innerText =
       "Converting voice...";
-
 
     const response =
       await fetch(
@@ -984,16 +1086,13 @@ async function sendAudio(){
         }
       );
 
-
     const data =
       await response.json();
-
 
     if(data.error){
 
       status.innerText =
         "Error";
-
 
       voiceText.innerText =
         data.error;
@@ -1001,17 +1100,14 @@ async function sendAudio(){
       return;
     }
 
-
     const text =
       (data.text || "")
       .trim();
-
 
     if(!text){
 
       status.innerText =
         "No speech detected";
-
 
       voiceText.innerText =
         "Please speak again.";
@@ -1019,23 +1115,18 @@ async function sendAudio(){
       return;
     }
 
-
     voiceText.innerText =
       cleanDisplayText(text);
-
 
     status.innerText =
       "Thinking...";
 
-
     await voiceAsk(text);
-
 
   }catch(error){
 
     status.innerText =
       "Error";
-
 
     voiceText.innerText =
       error.message;
@@ -1051,10 +1142,6 @@ async function sendAudio(){
 
 function detectLanguage(text){
 
-  /*
-     Bengali
-  */
-
   if(
     /[\u0980-\u09FF]/.test(text)
   ){
@@ -1062,11 +1149,6 @@ function detectLanguage(text){
     return "bn-IN";
 
   }
-
-
-  /*
-     Hindi / Devanagari
-  */
 
   if(
     /[\u0900-\u097F]/.test(text)
@@ -1076,18 +1158,13 @@ function detectLanguage(text){
 
   }
 
-
-  /*
-     Default English
-  */
-
   return "en-IN";
 }
 
 
 /* =========================
-   SHOW ANSWER CHARACTER BY
-   CHARACTER
+   SHOW ANSWER CHARACTER
+   BY CHARACTER
 ========================= */
 
 function showAnswerSlowly(answer){
@@ -1102,21 +1179,12 @@ function showAnswerSlowly(answer){
 
   }
 
-
   voiceText.innerText =
     "";
 
-
   let index = 0;
 
-
-  /*
-     Speed of text display.
-     Smaller number = faster.
-  */
-
   const speed = 35;
-
 
   answerTimer =
     setInterval(
@@ -1137,17 +1205,10 @@ function showAnswerSlowly(answer){
 
         }
 
-
         voiceText.innerText +=
           answer[index];
 
-
         index++;
-
-
-        /*
-           Automatic scrolling
-        */
 
         voiceText.scrollTop =
           voiceText.scrollHeight;
@@ -1184,16 +1245,13 @@ async function voiceAsk(text){
         }
       );
 
-
     const data =
       await response.json();
-
 
     if(data.error){
 
       status.innerText =
         "AI error";
-
 
       voiceText.innerText =
         data.error;
@@ -1202,66 +1260,39 @@ async function voiceAsk(text){
 
     }
 
-
     const answer =
       cleanDisplayText(
         data.answer ||
         "No answer"
       );
 
-
     status.innerText =
       "Hello AI";
-
-
-    /*
-       Show answer gradually
-    */
 
     showAnswerSlowly(
       answer
     );
-
-
-    /*
-       Detect language
-    */
 
     const language =
       detectLanguage(
         answer
       );
 
-
-    /*
-       Text to speech
-    */
-
     const speech =
       new SpeechSynthesisUtterance(
         answer
       );
 
-
     speech.lang =
       language;
-
 
     speech.rate =
       1;
 
-
     speech.pitch =
       1;
 
-
     speechSynthesis.cancel();
-
-
-    /*
-       When speech ends,
-       show complete answer
-    */
 
     speech.onend =
       function(){
@@ -1277,16 +1308,13 @@ async function voiceAsk(text){
 
         }
 
-
         voiceText.innerText =
           answer;
-
 
         voiceText.scrollTop =
           voiceText.scrollHeight;
 
       };
-
 
     speech.onerror =
       function(){
@@ -1296,17 +1324,14 @@ async function voiceAsk(text){
 
       };
 
-
     speechSynthesis.speak(
       speech
     );
-
 
   }catch(error){
 
     status.innerText =
       "AI error";
-
 
     voiceText.innerText =
       error.message;
@@ -1334,7 +1359,6 @@ close.addEventListener(
 
     }
 
-
     if(
       recorder &&
       recorder.stream
@@ -1352,7 +1376,6 @@ close.addEventListener(
 
     }
 
-
     if(answerTimer){
 
       clearInterval(
@@ -1364,9 +1387,7 @@ close.addEventListener(
 
     }
 
-
     speechSynthesis.cancel();
-
 
     voice.style.display =
       "none";
