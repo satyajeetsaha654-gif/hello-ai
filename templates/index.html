@@ -3,495 +3,570 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
 <title>Hello AI</title>
 
 <style>
 
 *{
- box-sizing:border-box
+    box-sizing:border-box;
 }
 
 html,body{
- margin:0;
- width:100%;
- height:100%;
- overflow:hidden;
- background:#000;
- color:#fff;
- font-family:Arial,sans-serif
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
+    color:#fff;
+    font-family:Arial,sans-serif;
 }
 
 button,input{
- font:inherit
+    font:inherit;
 }
 
 button{
- cursor:pointer
+    cursor:pointer;
 }
 
 #app{
- height:100dvh;
- display:flex;
- flex-direction:column;
- background:#000
+    width:100%;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background:#000;
 }
+
+/* =====================================================
+   HEADER
+===================================================== */
 
 header{
- height:58px;
- flex:none;
- display:flex;
- align-items:center;
- justify-content:center;
- border-bottom:1px solid #222;
- font-size:20px;
- font-weight:bold
+    height:58px;
+    flex:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-bottom:1px solid #222;
+    font-size:20px;
+    font-weight:bold;
 }
 
+/* =====================================================
+   CHAT
+===================================================== */
+
 #chat{
- flex:1;
- overflow-y:auto;
- padding:18px 12px 95px;
- scroll-behavior:smooth
+    flex:1;
+    overflow-y:auto;
+    padding:18px 12px 95px;
+    scroll-behavior:smooth;
 }
 
 .message{
- max-width:85%;
- margin:9px 0;
- padding:11px 14px;
- border-radius:17px;
- line-height:1.45;
- white-space:pre-wrap;
- word-wrap:break-word
+    max-width:85%;
+    margin:9px 0;
+    padding:11px 14px;
+    border-radius:17px;
+    line-height:1.45;
+    white-space:pre-wrap;
+    word-wrap:break-word;
 }
 
-.user{
- margin-left:auto;
- background:#252525
+.message.user{
+    margin-left:auto;
+    background:#252525;
+    border:1px solid #2878ff;
 }
 
-.ai{
- margin-right:auto;
- background:#111;
- border:1px solid #252525
+.message.ai{
+    margin-right:auto;
+    background:#111;
+    border:1px solid #252525;
+}
+
+.ai-label{
+    font-size:12px;
+    font-weight:bold;
+    color:#aaa;
+    margin-bottom:6px;
+}
+
+.ai-content{
+    word-wrap:break-word;
 }
 
 .message img{
- max-width:100%;
- max-height:300px;
- border-radius:12px
+    display:block;
+    max-width:100%;
+    max-height:300px;
+    border-radius:12px;
 }
 
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
+
 .actions{
- display:flex;
- gap:5px;
- flex-wrap:wrap;
- margin-top:8px
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-top:8px;
 }
 
 .actions button{
- background:#1d1d1d;
- color:#ddd;
- border:1px solid #333;
- border-radius:9px;
- padding:5px 8px;
- font-size:12px
+    background:#1d1d1d;
+    color:#ddd;
+    border:1px solid #333;
+    border-radius:9px;
+    padding:5px 8px;
+    font-size:12px;
 }
 
 .typing{
- opacity:.6;
- font-style:italic
+    opacity:.75;
 }
 
-/* MARKDOWN */
+/* =====================================================
+   MARKDOWN
+===================================================== */
 
 .message.ai table{
- width:100%;
- border-collapse:collapse;
- margin:10px 0;
- font-size:14px
+    width:100%;
+    border-collapse:collapse;
+    margin:10px 0;
+    font-size:14px;
 }
 
 .message.ai th,
 .message.ai td{
- border:1px solid #444;
- padding:7px;
- text-align:left
+    border:1px solid #444;
+    padding:7px;
+    text-align:left;
 }
 
 .message.ai th{
- background:#222
+    background:#222;
 }
 
 .message.ai p{
- margin:7px 0
+    margin:7px 0;
 }
 
 .message.ai ul,
 .message.ai ol{
- padding-left:22px
+    padding-left:22px;
 }
 
 .message.ai code{
- background:#222;
- padding:2px 5px;
- border-radius:5px
+    background:#222;
+    padding:2px 5px;
+    border-radius:5px;
 }
 
 .message.ai pre{
- background:#050505;
- border:1px solid #333;
- padding:10px;
- border-radius:8px;
- overflow-x:auto
+    background:#050505;
+    border:1px solid #333;
+    padding:10px;
+    border-radius:8px;
+    overflow-x:auto;
 }
 
-/* BOTTOM */
+/* =====================================================
+   BOTTOM BAR
+===================================================== */
 
 #bottom{
- position:fixed;
- left:0;
- right:0;
- bottom:0;
- padding:10px 10px calc(10px + env(safe-area-inset-bottom));
- background:#000;
- border-top:1px solid #222;
- display:flex;
- gap:7px;
- z-index:20
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+    background:#000;
+    border-top:1px solid #222;
+    display:flex;
+    gap:7px;
+    z-index:20;
 }
 
 #bottom input{
- flex:1;
- min-width:0;
- background:#181818;
- color:#fff;
- border:1px solid #333;
- border-radius:24px;
- padding:12px 15px;
- outline:none
+    flex:1;
+    min-width:0;
+    background:#181818;
+    color:#fff;
+    border:1px solid #333;
+    border-radius:24px;
+    padding:12px 15px;
+    outline:none;
+}
+
+#bottom input:focus{
+    border-color:#555;
 }
 
 #bottom button{
- width:45px;
- height:45px;
- border:0;
- border-radius:50%;
- background:#202020;
- color:#fff;
- font-size:19px
+    width:45px;
+    height:45px;
+    border:0;
+    border-radius:50%;
+    background:#202020;
+    color:#fff;
+    font-size:19px;
 }
 
 #send{
- background:#fff!important;
- color:#000!important
+    background:#fff!important;
+    color:#000!important;
 }
 
-/* PLUS MENU */
+/* =====================================================
+   PLUS MENU
+===================================================== */
 
 #plusMenu{
- display:none;
- position:fixed;
- left:10px;
- bottom:68px;
- background:#151515;
- border:1px solid #333;
- border-radius:14px;
- padding:8px;
- z-index:30
+    display:none;
+    position:fixed;
+    left:10px;
+    bottom:68px;
+    background:#151515;
+    border:1px solid #333;
+    border-radius:14px;
+    padding:8px;
+    z-index:30;
 }
 
 #plusMenu button{
- display:block;
- width:150px;
- background:#202020;
- color:#fff;
- border:0;
- border-radius:9px;
- padding:10px;
- margin:4px 0;
- text-align:left
+    display:block;
+    width:150px;
+    background:#202020;
+    color:#fff;
+    border:0;
+    border-radius:9px;
+    padding:10px;
+    margin:4px 0;
+    text-align:left;
 }
 
 input[type=file]{
- display:none
+    display:none;
 }
 
-/* VOICE SCREEN */
+/* =====================================================
+   VOICE SCREEN
+===================================================== */
 
 #voiceScreen{
- display:none;
- position:fixed;
- inset:0;
- z-index:50;
- background:#000;
- flex-direction:column;
- align-items:center;
- justify-content:center;
- padding:20px
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:50;
+    background:#000;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
 }
 
 #closeVoice{
- position:absolute;
- right:18px;
- top:18px;
- background:#222;
- color:#fff;
- border:0;
- width:42px;
- height:42px;
- border-radius:50%;
- font-size:20px
+    position:absolute;
+    right:18px;
+    top:18px;
+    background:#222;
+    color:#fff;
+    border:0;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    font-size:20px;
 }
 
 #orb{
- width:145px;
- height:145px;
- border-radius:50%;
- background:radial-gradient(circle,#fff,#555,#111);
- box-shadow:0 0 50px #555;
- animation:pulse 2s infinite;
- margin-bottom:25px
+    width:145px;
+    height:145px;
+    border-radius:50%;
+    background:radial-gradient(circle,#fff,#555,#111);
+    box-shadow:0 0 50px #555;
+    animation:pulse 2s infinite;
+    margin-bottom:25px;
 }
 
 @keyframes pulse{
 
- 50%{
-  transform:scale(1.08);
-  box-shadow:0 0 80px #777
- }
+    50%{
+        transform:scale(1.08);
+        box-shadow:0 0 80px #777;
+    }
 
 }
 
 #voiceStatus{
- font-size:15px;
- opacity:.75;
- margin:8px;
- text-align:center
+    font-size:15px;
+    opacity:.75;
+    margin:8px;
+    text-align:center;
 }
 
-/* VOICE ANSWER */
+#voiceProvider{
+    font-size:12px;
+    color:#777;
+    margin-top:2px;
+    text-align:center;
+}
 
 #voiceText{
- width:100%;
- max-width:92%;
- max-height:calc(100dvh - 350px);
- min-height:30px;
- overflow-y:auto;
- overflow-x:hidden;
- text-align:left;
- line-height:1.55;
- padding:8px 10px 25px;
- white-space:pre-wrap;
- word-wrap:break-word;
- scroll-behavior:smooth
+    width:100%;
+    max-width:92%;
+    max-height:calc(100dvh - 350px);
+    min-height:30px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    text-align:left;
+    line-height:1.55;
+    padding:8px 10px 25px;
+    white-space:normal;
+    word-wrap:break-word;
+    scroll-behavior:smooth;
 }
 
 #voiceText::-webkit-scrollbar{
- width:5px
+    width:5px;
 }
 
 #voiceText::-webkit-scrollbar-thumb{
- background:#444;
- border-radius:10px
+    background:#444;
+    border-radius:10px;
+}
+
+#voiceText table{
+    width:100%;
+    border-collapse:collapse;
+    margin:10px 0;
+    font-size:13px;
+}
+
+#voiceText th,
+#voiceText td{
+    border:1px solid #444;
+    padding:6px;
+    text-align:left;
+}
+
+#voiceText th{
+    background:#222;
 }
 
 #voiceText p{
- margin:7px 0
+    margin:7px 0;
 }
 
 #voiceText ul,
 #voiceText ol{
- padding-left:22px
+    padding-left:22px;
 }
 
 #voiceText code{
- background:#222;
- padding:2px 5px;
- border-radius:5px
+    background:#222;
+    padding:2px 5px;
+    border-radius:5px;
 }
 
 #voiceText pre{
- background:#050505;
- border:1px solid #333;
- padding:9px;
- border-radius:8px;
- overflow-x:auto
+    background:#050505;
+    border:1px solid #333;
+    padding:9px;
+    border-radius:8px;
+    overflow-x:auto;
 }
 
-/* VOICE CONTROLS */
+/* =====================================================
+   VOICE CONTROLS
+===================================================== */
 
 .voice-controls{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- justify-content:center;
- margin-top:20px
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:20px;
 }
 
 .voice-controls button{
- background:#202020;
- color:#fff;
- border:1px solid #333;
- border-radius:12px;
- padding:10px 15px
+    background:#202020;
+    color:#fff;
+    border:1px solid #333;
+    border-radius:12px;
+    padding:10px 15px;
 }
 
-/* VOICE PICKER */
+/* =====================================================
+   VOICE PICKER
+===================================================== */
 
 #voicePicker{
- display:none;
- position:fixed;
- inset:0;
- z-index:60;
- background:#080808;
- overflow-y:auto;
- padding:65px 14px 30px
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:60;
+    background:#080808;
+    overflow-y:auto;
+    padding:65px 14px 30px;
 }
 
 #closePicker{
- position:absolute;
- right:15px;
- top:15px;
- background:#222;
- color:#fff;
- border:0;
- width:42px;
- height:42px;
- border-radius:50%;
- font-size:20px
+    position:absolute;
+    right:15px;
+    top:15px;
+    background:#222;
+    color:#fff;
+    border:0;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    font-size:20px;
 }
 
 .voice-title{
- font-size:19px;
- font-weight:bold;
- margin:10px 0
+    font-size:19px;
+    font-weight:bold;
+    margin:10px 0;
 }
 
 .voice-item{
- display:flex;
- align-items:center;
- gap:7px;
- padding:8px;
- background:#151515;
- border:1px solid #292929;
- border-radius:10px;
- margin:6px 0
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:8px;
+    background:#151515;
+    border:1px solid #292929;
+    border-radius:10px;
+    margin:6px 0;
 }
 
 .voice-item.selected{
- background:#fff;
- color:#000;
- border-color:#fff
+    background:#fff;
+    color:#000;
+    border-color:#fff;
 }
 
 .voice-name{
- flex:1;
- font-size:14px
+    flex:1;
+    font-size:14px;
 }
 
 .preview-btn,
 .select-btn{
- background:#222;
- color:#fff;
- border:1px solid #444;
- border-radius:8px;
- padding:7px 9px;
- font-size:12px
+    background:#222;
+    color:#fff;
+    border:1px solid #444;
+    border-radius:8px;
+    padding:7px 9px;
+    font-size:12px;
 }
 
 .voice-item.selected .preview-btn,
 .voice-item.selected .select-btn{
- background:#000;
- color:#fff;
- border-color:#000
+    background:#000;
+    color:#fff;
+    border-color:#000;
 }
 
-/* MOBILE */
+.preview-btn.loading{
+    opacity:.6;
+    pointer-events:none;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
 
 @media(max-width:600px){
 
- header{
-  height:54px;
-  font-size:19px
- }
+    header{
+        height:54px;
+        font-size:19px;
+    }
 
- #chat{
-  padding:12px 8px 90px
- }
+    #chat{
+        padding:12px 8px 90px;
+    }
 
- .message{
-  max-width:91%;
-  font-size:15px
- }
+    .message{
+        max-width:91%;
+        font-size:15px;
+    }
 
- #bottom{
-  padding:8px
- }
+    #bottom{
+        padding:8px;
+    }
 
- #bottom input{
-  font-size:15px
- }
+    #bottom input{
+        font-size:15px;
+    }
 
- #bottom button{
-  width:43px;
-  height:43px
- }
+    #bottom button{
+        width:43px;
+        height:43px;
+    }
 
- #orb{
-  width:125px;
-  height:125px
- }
+    #orb{
+        width:125px;
+        height:125px;
+    }
 
- .voice-item{
-  gap:5px
- }
+    .voice-item{
+        gap:5px;
+    }
 
- .preview-btn,
- .select-btn{
-  padding:7px 6px
- }
+    .preview-btn,
+    .select-btn{
+        padding:7px 6px;
+    }
 
- #voiceText{
-  max-height:calc(100dvh - 330px)
- }
+    #voiceText{
+        max-height:calc(100dvh - 330px);
+    }
 
 }
 
 @media(max-width:380px){
 
- .voice-name{
-  font-size:12px
- }
+    .voice-name{
+        font-size:12px;
+    }
 
- .preview-btn,
- .select-btn{
-  font-size:11px
- }
+    .preview-btn,
+    .select-btn{
+        font-size:11px;
+    }
 
- #bottom button{
-  width:40px;
-  height:40px
- }
+    #bottom button{
+        width:40px;
+        height:40px;
+    }
 
 }
 
 @media(max-height:500px) and (orientation:landscape){
 
- #orb{
-  width:85px;
-  height:85px;
-  margin-bottom:10px
- }
+    #orb{
+        width:85px;
+        height:85px;
+        margin-bottom:10px;
+    }
 
- #voiceText{
-  max-height:calc(100dvh - 210px)
- }
+    #voiceText{
+        max-height:calc(100dvh - 210px);
+    }
 
 }
 
 </style>
+
 </head>
 
 <body>
@@ -502,1243 +577,1914 @@ input[type=file]{
 
 <div id="chat"></div>
 
+
+<!-- =====================================================
+     BOTTOM BAR
+===================================================== -->
+
 <div id="bottom">
 
-<button onclick="togglePlus()">+</button>
+    <button onclick="togglePlus()">+</button>
 
-<input
- id="messageInput"
- placeholder="Ask Hello AI anything..."
- onkeydown="if(event.key==='Enter')send()"
->
+    <input
+        id="messageInput"
+        placeholder="Ask Hello AI anything..."
+        onkeydown="if(event.key==='Enter')send()"
+    >
 
-<button id="send" onclick="send()">➤</button>
+    <button id="send" onclick="send()">➤</button>
 
-<button onclick="openVoice()">🎤</button>
+    <button onclick="openVoice()">🎤</button>
 
 </div>
+
+
+<!-- =====================================================
+     PLUS MENU
+===================================================== -->
 
 <div id="plusMenu">
 
-<button onclick="camera()">📷 Camera</button>
-<button onclick="gallery()">🖼️ Gallery</button>
-<button onclick="documentFile()">📄 Document</button>
+    <button onclick="camera()">📷 Camera</button>
+
+    <button onclick="gallery()">🖼️ Gallery</button>
+
+    <button onclick="documentFile()">📄 Document</button>
 
 </div>
 
+
+<!-- =====================================================
+     FILE INPUTS
+===================================================== -->
+
 <input
- id="cameraInput"
- type="file"
- accept="image/*"
- capture="environment"
- onchange="imageFile(this)"
+    id="cameraInput"
+    type="file"
+    accept="image/*"
+    capture="environment"
+    onchange="imageFile(this)"
 >
 
 <input
- id="galleryInput"
- type="file"
- accept="image/*"
- onchange="imageFile(this)"
+    id="galleryInput"
+    type="file"
+    accept="image/*"
+    onchange="imageFile(this)"
 >
 
 <input
- id="documentInput"
- type="file"
- onchange="docFile(this)"
+    id="documentInput"
+    type="file"
+    onchange="docFile(this)"
 >
 
-<!-- VOICE SCREEN -->
+
+<!-- =====================================================
+     VOICE SCREEN
+===================================================== -->
 
 <div id="voiceScreen">
 
-<button id="closeVoice" onclick="closeVoice()">✕</button>
+    <button id="closeVoice" onclick="closeVoice()">✕</button>
 
-<div id="orb"></div>
+    <div id="orb"></div>
 
-<div id="voiceStatus">
-Press Speak to talk
+    <div id="voiceStatus">
+        Press Speak to talk
+    </div>
+
+    <div id="voiceProvider"></div>
+
+    <div id="voiceText"></div>
+
+    <div class="voice-controls">
+
+        <button id="voiceMic" onclick="recordToggle()">
+            🎙️ Speak
+        </button>
+
+        <button id="muteButton" onclick="mute()">
+            🔇 Mute
+        </button>
+
+        <button onclick="openPicker()">
+            🎙️ Voice
+        </button>
+
+    </div>
+
 </div>
 
-<div id="voiceText"></div>
 
-<div class="voice-controls">
-
-<button id="voiceMic" onclick="recordToggle()">
-🎙️ Speak
-</button>
-
-<button onclick="mute()">
-🔇 Mute
-</button>
-
-<button onclick="openPicker()">
-🎙️ Voice
-</button>
-
-</div>
-
-</div>
-
-<!-- VOICE PICKER -->
+<!-- =====================================================
+     VOICE PICKER
+===================================================== -->
 
 <div id="voicePicker">
 
-<button id="closePicker" onclick="closePicker()">✕</button>
+    <button id="closePicker" onclick="closePicker()">✕</button>
 
-<div class="voice-title">
-Male Voices
-</div>
+    <div class="voice-title">
+        Male Voices
+    </div>
 
-<div id="maleVoices"></div>
+    <div id="maleVoices"></div>
 
-<div class="voice-title">
-Female Voices
-</div>
+    <div class="voice-title">
+        Female Voices
+    </div>
 
-<div id="femaleVoices"></div>
-
-</div>
+    <div id="femaleVoices"></div>
 
 </div>
 
-<!-- MARKDOWN LIBRARIES -->
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
 
 <script>
 
-let history=[];
+/* =====================================================
+   STATE
+===================================================== */
 
-let selectedVoice=
- localStorage.getItem("helloAI_voice")||"shubh";
+let history = [];
 
-let recorder=null;
-let chunks=[];
-let stream=null;
-let recording=false;
-let muted=false;
-let audioNow=null;
-let lastQuestion="";
+let selectedVoice =
+    localStorage.getItem("helloAI_voice") || "shubh";
 
-/* CLEAN AI TEXT
-   Voice answer-এর জন্য Markdown পরিষ্কার করবে */
+let recorder = null;
+let chunks = [];
+let stream = null;
 
-function cleanVoiceText(text){
+let recording = false;
+let muted = false;
 
- let s=String(text||"");
+let audioNow = null;
+let lastQuestion = "";
 
- /* code blocks */
- s=s.replace(/```[\s\S]*?```/g,function(match){
 
-  return match
-   .replace(/```[a-zA-Z0-9_-]*/g,"")
-   .replace(/```/g,"")
-   .trim();
-
- });
-
- /* headings */
- s=s.replace(/^#{1,6}\s*/gm,"");
-
- /* bold / italic / strike */
- s=s.replace(/\*\*(.*?)\*\*/g,"$1");
- s=s.replace(/__(.*?)__/g,"$1");
- s=s.replace(/\*(.*?)\*/g,"$1");
- s=s.replace(/_(.*?)_/g,"$1");
- s=s.replace(/~~(.*?)~~/g,"$1");
-
- /* markdown links */
- s=s.replace(
-  /\[([^\]]+)\]\([^)]+\)/g,
-  "$1"
- );
-
- /* table separator */
- s=s.replace(
-  /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/gm,
-  ""
- );
-
- /* table pipes */
- s=s.replace(/\|/g," ");
-
- /* bullet cleanup */
- s=s.replace(/^\s*[-*+]\s+/gm,"• ");
-
- /* numbered markdown */
- s=s.replace(/^\s*\d+\.\s+/gm,function(match){
-
-  return match.trim()+" ";
-
- });
-
- /* extra spaces */
- s=s.replace(/[ \t]+/g," ");
-
- /* extra blank lines */
- s=s.replace(/\n{3,}/g,"\n\n");
-
- return s.trim();
-}
-
-/* NORMAL MARKDOWN */
+/* =====================================================
+   MARKDOWN
+===================================================== */
 
 function renderAIText(text){
 
- if(window.marked && window.DOMPurify){
+    if(window.marked && window.DOMPurify){
 
-  marked.setOptions({
-   breaks:true,
-   gfm:true
-  });
+        marked.setOptions({
+            breaks:true,
+            gfm:true
+        });
 
-  return DOMPurify.sanitize(
-   marked.parse(String(text))
-  );
+        return DOMPurify.sanitize(
+            marked.parse(String(text))
+        );
+    }
 
- }
-
- return String(text)
-  .replace(/&/g,"&amp;")
-  .replace(/</g,"&lt;")
-  .replace(/>/g,"&gt;")
-  .replace(/\n/g,"<br>");
-
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/\n/g,"<br>");
 }
 
-/* MESSAGE */
+
+/* =====================================================
+   NORMAL MESSAGE
+===================================================== */
 
 function msg(text,type){
 
- let d=document.createElement("div");
+    let d = document.createElement("div");
 
- d.className="message "+type;
+    d.className = "message " + type;
 
- d.textContent=text;
+    d.textContent = text;
 
- document.getElementById("chat")
- .appendChild(d);
+    document.getElementById("chat").appendChild(d);
 
- scrollChat();
+    scrollChat();
 
- return d;
+    return d;
 }
+
 
 function scrollChat(){
 
- let c=document.getElementById("chat");
+    let c = document.getElementById("chat");
 
- c.scrollTop=c.scrollHeight;
-
+    c.scrollTop = c.scrollHeight;
 }
 
-/* SEND */
+
+/* =====================================================
+   AI MESSAGE
+===================================================== */
+
+async function addAIMessage(text){
+
+    let box = document.createElement("div");
+
+    box.className = "message ai";
+
+
+    let label = document.createElement("div");
+
+    label.className = "ai-label";
+
+    label.textContent = "Hello AI";
+
+
+    let content = document.createElement("div");
+
+    content.className = "ai-content typing";
+
+
+    let actions = document.createElement("div");
+
+    actions.className = "actions";
+
+    actions.innerHTML = `
+
+        <button onclick="copyText(this)">
+            Copy
+        </button>
+
+        <button onclick="this.textContent='👍'">
+            Like
+        </button>
+
+        <button onclick="this.textContent='👎'">
+            Dislike
+        </button>
+
+        <button onclick="speak(this.parentElement.parentElement.querySelector('.ai-content').textContent)">
+            🔊 Speak
+        </button>
+
+        <button onclick="regenerate()">
+            ↻ Regenerate
+        </button>
+
+        <button onclick="share(this.parentElement.parentElement.querySelector('.ai-content').textContent)">
+            Share
+        </button>
+
+    `;
+
+
+    box.append(
+        label,
+        content,
+        actions
+    );
+
+    document.getElementById("chat").appendChild(box);
+
+    scrollChat();
+
+
+    let full = String(text);
+
+
+    for(let i=0;i<full.length;i+=3){
+
+        content.textContent =
+            full.slice(0,i+3);
+
+        scrollChat();
+
+        await new Promise(
+            resolve => setTimeout(resolve,12)
+        );
+    }
+
+
+    content.classList.remove("typing");
+
+    content.innerHTML =
+        renderAIText(full);
+
+    scrollChat();
+}
+
+
+/* =====================================================
+   SEND TEXT
+===================================================== */
 
 async function send(){
 
- let input=
-  document.getElementById("messageInput");
+    let input =
+        document.getElementById("messageInput");
 
- let q=input.value.trim();
+    let q =
+        input.value.trim();
 
- if(!q)return;
+    if(!q)return;
 
- input.value="";
+    input.value = "";
 
- lastQuestion=q;
+    lastQuestion = q;
 
- msg(q,"user");
+    msg(q,"user");
 
- let loading=
-  msg("Thinking...","ai");
 
- try{
+    let loading =
+        msg("Thinking...","ai");
 
-  let r=await fetch("/ask",{
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    question:q,
-    history:history
-   })
-  });
 
-  let d=await r.json();
+    try{
 
-  loading.remove();
+        let r =
+            await fetch("/ask",{
 
-  if(!r.ok){
+                method:"POST",
 
-   msg(
-    d.error||"Something went wrong.",
-    "ai"
-   );
+                headers:{
+                    "Content-Type":"application/json"
+                },
 
-   return;
-  }
+                body:JSON.stringify({
+                    question:q,
+                    history:history
+                })
 
-  let answer=
-   d.answer||
-   d.response||
-   "";
+            });
 
-  history.push({
-   role:"user",
-   content:q
-  });
 
-  history.push({
-   role:"assistant",
-   content:answer
-  });
+        let d =
+            await r.json();
 
-  addAIMessage(answer);
 
- }catch(e){
+        loading.remove();
 
-  console.error(e);
 
-  loading.remove();
+        if(!r.ok){
 
-  msg(
-   "Connection error.",
-   "ai"
-  );
+            msg(
+                d.error || "Something went wrong.",
+                "ai"
+            );
 
- }
+            return;
+        }
 
+
+        let answer =
+            d.answer ||
+            d.response ||
+            "";
+
+
+        history.push(
+            {
+                role:"user",
+                content:q
+            },
+            {
+                role:"assistant",
+                content:answer
+            }
+        );
+
+
+        await addAIMessage(answer);
+
+
+    }catch(e){
+
+        console.error("ASK ERROR:",e);
+
+        loading.remove();
+
+        msg(
+            "Connection error.",
+            "ai"
+        );
+    }
 }
 
-/* AI MESSAGE */
 
-function addAIMessage(text){
-
- let box=
-  document.createElement("div");
-
- box.className="message ai";
-
- let content=
-  document.createElement("div");
-
- content.innerHTML=
-  renderAIText(text);
-
- let actions=
-  document.createElement("div");
-
- actions.className="actions";
-
- actions.innerHTML=`
- <button onclick="copyText(this)">Copy</button>
- <button onclick="this.textContent='👍'">Like</button>
- <button onclick="this.textContent='👎'">Dislike</button>
- <button onclick="speak(this.parentElement.parentElement.querySelector('div').textContent)">🔊 Speak</button>
- <button onclick="regenerate()">↻ Regenerate</button>
- <button onclick="share(this.parentElement.parentElement.querySelector('div').textContent)">Share</button>
- `;
-
- box.appendChild(content);
-
- box.appendChild(actions);
-
- document.getElementById("chat")
- .appendChild(box);
-
- scrollChat();
-
-}
-
-/* COPY */
+/* =====================================================
+   COPY
+===================================================== */
 
 function copyText(btn){
 
- let text=
-  btn.parentElement.parentElement
-  .querySelector("div")
-  .textContent;
+    let text =
+        btn.parentElement
+        .parentElement
+        .querySelector(".ai-content")
+        .textContent;
 
- navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text);
 
- btn.textContent="Copied";
+    btn.textContent = "Copied";
 
- setTimeout(()=>{
 
-  btn.textContent="Copy";
+    setTimeout(()=>{
 
- },1200);
+        btn.textContent = "Copy";
 
+    },1200);
 }
 
-/* SPEAK */
+
+/* =====================================================
+   TEXT TO SPEECH
+===================================================== */
 
 async function speak(text){
 
- try{
+    try{
 
-  let r=await fetch("/tts",{
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    text:text,
-    speaker:selectedVoice
-   })
-  });
+        let r =
+            await fetch("/tts",{
 
-  let d=await r.json();
+                method:"POST",
 
-  if(!r.ok||!d.audio){
+                headers:{
+                    "Content-Type":"application/json"
+                },
 
-   console.error(d);
+                body:JSON.stringify({
+                    text:text,
+                    speaker:selectedVoice
+                })
 
-   return;
-  }
+            });
 
-  if(audioNow){
 
-   audioNow.pause();
-   audioNow.currentTime=0;
+        let d =
+            await r.json();
 
-  }
 
-  audioNow=new Audio(
-   "data:audio/wav;base64,"+d.audio
-  );
+        if(!r.ok || !d.audio){
 
-  await audioNow.play();
+            console.error("TTS ERROR:",d);
 
- }catch(e){
+            return;
+        }
 
-  console.error("TTS ERROR:",e);
 
- }
+        if(audioNow){
 
+            audioNow.pause();
+
+            audioNow.currentTime = 0;
+        }
+
+
+        audioNow =
+            new Audio(
+                "data:audio/wav;base64," + d.audio
+            );
+
+
+        await audioNow.play();
+
+
+    }catch(e){
+
+        console.error(
+            "TTS ERROR:",
+            e
+        );
+    }
 }
 
-/* SHARE */
+
+/* =====================================================
+   SHARE
+===================================================== */
 
 async function share(text){
 
- try{
+    try{
 
-  if(navigator.share){
+        if(navigator.share){
 
-   await navigator.share({
-    title:"Hello AI",
-    text:text
-   });
+            await navigator.share({
 
-  }else{
+                title:"Hello AI",
 
-   await navigator.clipboard.writeText(text);
+                text:text
 
-   alert("Answer copied.");
+            });
 
-  }
+        }else{
 
- }catch(e){}
+            await navigator.clipboard.writeText(text);
 
+            alert("Answer copied.");
+
+        }
+
+    }catch(e){}
 }
 
-/* REGENERATE */
+
+/* =====================================================
+   REGENERATE
+===================================================== */
 
 async function regenerate(){
 
- if(!lastQuestion)return;
+    if(!lastQuestion)return;
 
- let loading=
-  msg("Regenerating...","ai");
 
- try{
+    let loading =
+        msg("Regenerating...","ai");
 
-  let r=await fetch("/ask",{
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    question:lastQuestion,
-    history:history
-   })
-  });
 
-  let d=await r.json();
+    try{
 
-  loading.remove();
+        let r =
+            await fetch("/ask",{
 
-  if(!r.ok){
+                method:"POST",
 
-   msg(
-    d.error||"Failed.",
-    "ai"
-   );
+                headers:{
+                    "Content-Type":"application/json"
+                },
 
-   return;
-  }
+                body:JSON.stringify({
 
-  let answer=
-   d.answer||
-   d.response||
-   "";
+                    question:lastQuestion,
 
-  history.push({
-   role:"assistant",
-   content:answer
-  });
+                    history:history
 
-  addAIMessage(answer);
+                })
 
- }catch(e){
+            });
 
-  loading.remove();
 
-  msg(
-   "Connection error.",
-   "ai"
-  );
+        let d =
+            await r.json();
 
- }
 
+        loading.remove();
+
+
+        if(!r.ok){
+
+            msg(
+                d.error || "Failed.",
+                "ai"
+            );
+
+            return;
+        }
+
+
+        let answer =
+            d.answer ||
+            d.response ||
+            "";
+
+
+        history.push({
+
+            role:"assistant",
+
+            content:answer
+
+        });
+
+
+        await addAIMessage(answer);
+
+
+    }catch(e){
+
+        console.error(e);
+
+        loading.remove();
+
+        msg(
+            "Connection error.",
+            "ai"
+        );
+    }
 }
 
-/* PLUS */
+
+/* =====================================================
+   PLUS MENU
+===================================================== */
 
 function togglePlus(){
 
- let m=
-  document.getElementById("plusMenu");
+    let m =
+        document.getElementById("plusMenu");
 
- m.style.display=
-  m.style.display==="block"
-  ?"none"
-  :"block";
-
+    m.style.display =
+        m.style.display === "block"
+        ? "none"
+        : "block";
 }
 
-/* CAMERA */
 
 function camera(){
 
- document.getElementById("plusMenu")
- .style.display="none";
+    document.getElementById(
+        "plusMenu"
+    ).style.display = "none";
 
- document.getElementById("cameraInput")
- .click();
-
+    document.getElementById(
+        "cameraInput"
+    ).click();
 }
 
-/* GALLERY */
 
 function gallery(){
 
- document.getElementById("plusMenu")
- .style.display="none";
+    document.getElementById(
+        "plusMenu"
+    ).style.display = "none";
 
- document.getElementById("galleryInput")
- .click();
-
+    document.getElementById(
+        "galleryInput"
+    ).click();
 }
 
-/* DOCUMENT */
 
 function documentFile(){
 
- document.getElementById("plusMenu")
- .style.display="none";
+    document.getElementById(
+        "plusMenu"
+    ).style.display = "none";
 
- document.getElementById("documentInput")
- .click();
-
+    document.getElementById(
+        "documentInput"
+    ).click();
 }
 
-/* IMAGE */
+
+/* =====================================================
+   IMAGE
+===================================================== */
 
 async function imageFile(input){
 
- let file=
-  input.files&&input.files[0];
+    let file =
+        input.files && input.files[0];
 
- if(!file)return;
+    if(!file)return;
 
- msg(
-  "🖼️ "+file.name,
-  "user"
- );
-
- let reader=
-  new FileReader();
-
- reader.onload=async function(){
-
-  let dataUrl=
-   reader.result;
-
-  let imgBox=
-   document.createElement("div");
-
-  imgBox.className=
-   "message user";
-
-  let img=
-   document.createElement("img");
-
-  img.src=dataUrl;
-
-  imgBox.appendChild(img);
-
-  document.getElementById("chat")
-  .appendChild(imgBox);
-
-  scrollChat();
-
-  let loading=
-   msg(
-    "Image বুঝছি...",
-    "ai"
-   );
-
-  try{
-
-   let r=await fetch("/vision",{
-    method:"POST",
-    headers:{
-     "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-     image:dataUrl,
-     question:
-      "এই ছবিটা দেখে বলো এখানে কী আছে।"
-    })
-   });
-
-   let d=await r.json();
-
-   loading.remove();
-
-   if(!r.ok){
 
     msg(
-     d.error||
-     "Image analysis failed.",
-     "ai"
+        "🖼️ " + file.name,
+        "user"
     );
 
-    return;
-   }
 
-   addAIMessage(
-    d.answer||
-    d.response||
-    "Image বুঝতে পারিনি."
-   );
+    let reader =
+        new FileReader();
 
-  }catch(e){
 
-   loading.remove();
+    reader.onload = async function(){
 
-   msg(
-    "Image analysis failed.",
-    "ai"
-   );
+        let dataUrl =
+            reader.result;
 
-  }
 
- };
+        let imgBox =
+            document.createElement("div");
 
- reader.readAsDataURL(file);
+        imgBox.className =
+            "message user";
 
- input.value="";
 
+        let img =
+            document.createElement("img");
+
+        img.src = dataUrl;
+
+
+        imgBox.appendChild(img);
+
+        document.getElementById(
+            "chat"
+        ).appendChild(imgBox);
+
+        scrollChat();
+
+
+        let loading =
+            msg(
+                "Image বুঝছি...",
+                "ai"
+            );
+
+
+        try{
+
+            let r =
+                await fetch("/vision",{
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":"application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        image:dataUrl,
+
+                        question:
+                            "এই ছবিটা দেখে বলো এখানে কী আছে।"
+
+                    })
+
+                });
+
+
+            let d =
+                await r.json();
+
+
+            loading.remove();
+
+
+            if(!r.ok){
+
+                msg(
+                    d.error ||
+                    "Image analysis failed.",
+                    "ai"
+                );
+
+                return;
+            }
+
+
+            await addAIMessage(
+                d.answer ||
+                d.response ||
+                "Image বুঝতে পারিনি."
+            );
+
+
+        }catch(e){
+
+            console.error(
+                "VISION ERROR:",
+                e
+            );
+
+            loading.remove();
+
+            msg(
+                "Image analysis failed.",
+                "ai"
+            );
+        }
+
+    };
+
+
+    reader.readAsDataURL(file);
+
+    input.value = "";
 }
 
-/* DOCUMENT */
+
+/* =====================================================
+   DOCUMENT
+===================================================== */
 
 function docFile(input){
 
- let file=
-  input.files&&input.files[0];
+    let file =
+        input.files && input.files[0];
 
- if(!file)return;
+    if(!file)return;
 
- msg(
-  "📄 "+file.name,
-  "user"
- );
 
- msg(
-  "Document selected: "+file.name,
-  "ai"
- );
+    msg(
+        "📄 " + file.name,
+        "user"
+    );
 
- input.value="";
 
+    msg(
+        "Document selected: " + file.name,
+        "ai"
+    );
+
+
+    input.value = "";
 }
 
-/* VOICE SCREEN */
+
+/* =====================================================
+   OPEN VOICE
+===================================================== */
 
 function openVoice(){
 
- document.getElementById("voiceScreen")
- .style.display="flex";
+    document.getElementById(
+        "voiceScreen"
+    ).style.display = "flex";
 
- document.getElementById("voiceStatus")
- .textContent=
-  "Press Speak to talk";
 
- document.getElementById("voiceText")
- .textContent="";
+    document.getElementById(
+        "voiceStatus"
+    ).textContent =
+        "Press Speak to talk";
 
+
+    document.getElementById(
+        "voiceProvider"
+    ).textContent = "";
+
+
+    let box =
+        document.getElementById(
+            "voiceText"
+        );
+
+    box.innerHTML = "";
+
+    box.dataset.userText = "";
 }
+
+
+/* =====================================================
+   CLOSE VOICE
+===================================================== */
 
 function closeVoice(){
 
- if(recording)
-  stopRecording();
+    if(recording){
 
- document.getElementById("voiceScreen")
- .style.display="none";
+        stopRecording();
+    }
 
+
+    if(audioNow){
+
+        audioNow.pause();
+
+        audioNow.currentTime = 0;
+    }
+
+
+    document.getElementById(
+        "voiceScreen"
+    ).style.display = "none";
 }
 
-/* RECORD */
+
+/* =====================================================
+   RECORD TOGGLE
+===================================================== */
 
 function recordToggle(){
 
- recording
-  ?stopRecording()
-  :startRecording();
+    if(recording){
 
+        stopRecording();
+
+    }else{
+
+        startRecording();
+    }
 }
+
+
+/* =====================================================
+   START RECORDING
+===================================================== */
 
 async function startRecording(){
 
- try{
+    try{
 
-  if(muted){
+        if(muted){
 
-   document.getElementById("voiceStatus")
-   .textContent=
-    "Microphone is muted.";
+            document.getElementById(
+                "voiceStatus"
+            ).textContent =
+                "Microphone is muted.";
 
-   return;
-  }
+            return;
+        }
 
-  stream=
-   await navigator.mediaDevices
-   .getUserMedia({
-    audio:true
-   });
 
-  recorder=
-   new MediaRecorder(stream);
+        if(
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ){
 
-  chunks=[];
+            alert(
+                "এই browser-এ microphone support নেই।"
+            );
 
-  recorder.ondataavailable=e=>{
+            return;
+        }
 
-   if(e.data.size)
-    chunks.push(e.data);
 
-  };
+        stream =
+            await navigator.mediaDevices.getUserMedia({
 
-  recorder.onstop=sendVoice;
+                audio:{
+                    echoCancellation:true,
+                    noiseSuppression:true,
+                    autoGainControl:true
+                }
 
-  recorder.start();
+            });
 
-  recording=true;
 
-  document.getElementById("voiceMic")
-  .textContent="⏹️ Stop";
+        recorder =
+            new MediaRecorder(stream);
 
-  document.getElementById("voiceStatus")
-  .textContent="Listening...";
 
- }catch(e){
+        chunks = [];
 
-  alert(
-   "Microphone permission দিন."
-  );
 
- }
+        recorder.ondataavailable =
+            function(e){
 
+                if(
+                    e.data &&
+                    e.data.size > 0
+                ){
+
+                    chunks.push(e.data);
+                }
+            };
+
+
+        recorder.onerror =
+            function(e){
+
+                console.error(
+                    "RECORDER ERROR:",
+                    e
+                );
+            };
+
+
+        recorder.onstop =
+            sendVoice;
+
+
+        recorder.start();
+
+
+        recording = true;
+
+
+        document.getElementById(
+            "voiceMic"
+        ).textContent =
+            "⏹️ Stop";
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Listening...";
+
+
+        document.getElementById(
+            "voiceProvider"
+        ).textContent = "";
+
+
+    }catch(e){
+
+        console.error(
+            "MIC ERROR:",
+            e
+        );
+
+
+        alert(
+            "Microphone permission দিন এবং আবার চেষ্টা করুন."
+        );
+    }
 }
+
+
+/* =====================================================
+   STOP RECORDING
+===================================================== */
 
 function stopRecording(){
 
- if(!recorder)return;
+    if(!recorder){
 
- if(recorder.state!=="inactive")
-  recorder.stop();
+        return;
+    }
 
- if(stream){
 
-  stream.getTracks()
-  .forEach(t=>t.stop());
+    if(
+        recorder.state !== "inactive"
+    ){
 
- }
+        recorder.stop();
+    }
 
- recording=false;
 
- document.getElementById("voiceMic")
- .textContent="🎙️ Speak";
+    if(stream){
 
- document.getElementById("voiceStatus")
- .textContent="Processing...";
+        stream
+            .getTracks()
+            .forEach(
+                t => t.stop()
+            );
 
+        stream = null;
+    }
+
+
+    recording = false;
+
+
+    document.getElementById(
+        "voiceMic"
+    ).textContent =
+        "🎙️ Speak";
+
+
+    document.getElementById(
+        "voiceStatus"
+    ).textContent =
+        "Gemini is transcribing...";
 }
 
-/* SEND VOICE */
+
+/* =====================================================
+   SEND VOICE
+===================================================== */
 
 async function sendVoice(){
 
- try{
+    let controller = null;
 
-  let blob=
-   new Blob(
-    chunks,
-    {
-     type:
-      recorder&&recorder.mimeType
-      ?recorder.mimeType
-      :"audio/webm"
+    let timeout = null;
+
+
+    try{
+
+        let mime =
+            recorder && recorder.mimeType
+            ? recorder.mimeType
+            : "audio/webm";
+
+
+        let blob =
+            new Blob(
+                chunks,
+                {
+                    type:mime
+                }
+            );
+
+
+        console.log(
+            "VOICE AUDIO SIZE:",
+            blob.size
+        );
+
+
+        console.log(
+            "VOICE MIME:",
+            mime
+        );
+
+
+        if(blob.size < 1000){
+
+            throw new Error(
+                "Audio recording is too small."
+            );
+        }
+
+
+        let form =
+            new FormData();
+
+
+        form.append(
+            "audio",
+            blob,
+            "voice.webm"
+        );
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Gemini is transcribing...";
+
+
+        document.getElementById(
+            "voiceProvider"
+        ).textContent =
+            "Automatic language detection";
+
+
+        console.log(
+            "SENDING AUDIO TO /transcribe..."
+        );
+
+
+        /* =================================================
+           60 SECOND TIMEOUT
+        ================================================= */
+
+
+        controller =
+            new AbortController();
+
+
+        timeout =
+            setTimeout(
+                ()=>{
+                    controller.abort();
+                },
+                60000
+            );
+
+
+        /* =================================================
+           SEND AUDIO
+        ================================================= */
+
+
+        let r =
+            await fetch(
+                "/transcribe",
+                {
+                    method:"POST",
+                    body:form,
+                    signal:controller.signal
+                }
+            );
+
+
+        clearTimeout(timeout);
+
+        timeout = null;
+
+
+        console.log(
+            "TRANSCRIBE RESPONSE:",
+            r.status
+        );
+
+
+        let d =
+            await r.json();
+
+
+        console.log(
+            "TRANSCRIBE DATA:",
+            d
+        );
+
+
+        if(!r.ok){
+
+            throw new Error(
+                d.error ||
+                "Transcription failed"
+            );
+        }
+
+
+        let text =
+            String(
+                d.text ||
+                d.transcript ||
+                ""
+            ).trim();
+
+
+        console.log(
+            "FINAL TRANSCRIPT:",
+            text
+        );
+
+
+        if(!text){
+
+            throw new Error(
+                "No speech detected."
+            );
+        }
+
+
+        /* =================================================
+           SHOW USER SPEECH
+        ================================================= */
+
+
+        let voiceBox =
+            document.getElementById(
+                "voiceText"
+            );
+
+
+        voiceBox.dataset.userText =
+            "<b>You:</b><br>" +
+            escapeHTML(text);
+
+
+        voiceBox.innerHTML =
+            voiceBox.dataset.userText;
+
+
+        voiceBox.scrollTop =
+            voiceBox.scrollHeight;
+
+
+        /* =================================================
+           SHOW PROVIDER
+        ================================================= */
+
+
+        document.getElementById(
+            "voiceProvider"
+        ).textContent =
+            d.provider ||
+            "Gemini Transcribe";
+
+
+        /* =================================================
+           NORMAL CHAT
+        ================================================= */
+
+
+        msg(
+            "🎤 " + text,
+            "user"
+        );
+
+
+        /* =================================================
+           SEND TO AI
+        ================================================= */
+
+
+        await voiceAsk(text);
+
+
+    }catch(e){
+
+        console.error(
+            "VOICE ERROR:",
+            e
+        );
+
+
+        if(
+            e.name === "AbortError"
+        ){
+
+            document.getElementById(
+                "voiceStatus"
+            ).textContent =
+                "Transcription timed out. Please try again.";
+
+        }else{
+
+            document.getElementById(
+                "voiceStatus"
+            ).textContent =
+                e.message ||
+                "Voice processing failed.";
+        }
+
+
+        document.getElementById(
+            "voiceProvider"
+        ).textContent = "";
+
+
+    }finally{
+
+        if(timeout){
+
+            clearTimeout(timeout);
+
+        }
+
     }
-   );
-
-  let form=
-   new FormData();
-
-  form.append(
-   "audio",
-   blob,
-   "voice.webm"
-  );
-
-  let r=
-   await fetch(
-    "/transcribe",
-    {
-     method:"POST",
-     body:form
-    }
-   );
-
-  let d=
-   await r.json();
-
-  if(!r.ok)
-   throw new Error(
-    d.error||
-    "Transcription failed"
-   );
-
-  let text=
-   d.text||
-   d.transcript||
-   "";
-
-  if(!text.trim()){
-
-   document.getElementById("voiceStatus")
-   .textContent=
-    "No speech detected.";
-
-   return;
-  }
-
-  document.getElementById("voiceText")
-  .textContent=
-   "You: "+text;
-
-  await voiceAsk(text);
-
- }catch(e){
-
-  console.error(e);
-
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Voice processing failed.";
-
- }
-
 }
 
-/* VOICE ANSWER TYPING
-   Clean text + gradual typing */
+
+/* =====================================================
+   VOICE ANSWER TYPING
+===================================================== */
 
 async function typeVoiceAnswer(text){
 
- let box=
-  document.getElementById("voiceText");
+    let box =
+        document.getElementById(
+            "voiceText"
+        );
 
- let clean=
-  cleanVoiceText(text);
 
- box.textContent="";
+    let userText =
+        box.dataset.userText || "";
 
- box.scrollTop=0;
 
- /* প্রথমে AI label */
+    let full =
+        String(text);
 
- let prefix="Hello AI: ";
 
- let full=
-  prefix+clean;
+    let current = "";
 
- let i=0;
 
- while(i<full.length){
+    box.innerHTML =
+        userText +
+        "<br><br>" +
+        "<b>Hello AI:</b><br>";
 
-  /* একসাথে বেশি অক্ষর না দিয়ে
-     ধীরে ধীরে দেখাবে */
 
-  let step=1;
+    box.scrollTop =
+        box.scrollHeight;
 
-  if(i<20)
-   step=1;
-  else
-   step=2;
 
-  box.textContent=
-   full.slice(0,i+step);
+    for(
+        let i=0;
+        i<full.length;
+        i+=3
+    ){
 
-  i+=step;
+        current +=
+            full.slice(i,i+3);
 
-  box.scrollTop=
-   box.scrollHeight;
 
-  await new Promise(
-   resolve=>
-    setTimeout(resolve,25)
-  );
+        box.innerHTML =
+            userText +
+            "<br><br>" +
+            "<b>Hello AI:</b><br>" +
+            escapeHTML(current)
+                .replace(/\n/g,"<br>");
 
- }
 
- box.textContent=
-  full;
+        box.scrollTop =
+            box.scrollHeight;
 
- box.scrollTop=
-  box.scrollHeight;
 
+        await new Promise(
+            resolve =>
+                setTimeout(resolve,12)
+        );
+    }
+
+
+    box.innerHTML =
+        userText +
+        "<br><br>" +
+        "<b>Hello AI:</b><br>" +
+        renderAIText(full);
+
+
+    box.scrollTop =
+        box.scrollHeight;
 }
 
-/* VOICE ASK */
+
+/* =====================================================
+   VOICE ASK
+===================================================== */
 
 async function voiceAsk(text){
 
- try{
+    try{
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Hello AI is thinking...";
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Hello AI is thinking...";
 
-  let r=await fetch("/ask",{
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    question:text,
-    history:history
-   })
-  });
 
-  let d=
-   await r.json();
+        let r =
+            await fetch(
+                "/ask",
+                {
 
-  if(!r.ok)
-   throw new Error(
-    d.error||
-    "AI failed"
-   );
+                    method:"POST",
 
-  let answer=
-   d.answer||
-   d.response||
-   "";
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
 
-  history.push({
-   role:"user",
-   content:text
-  });
+                    body:JSON.stringify({
 
-  history.push({
-   role:"assistant",
-   content:answer
-  });
+                        question:text,
 
-  lastQuestion=text;
+                        history:history
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Hello AI is answering...";
+                    })
 
-  await typeVoiceAnswer(answer);
+                }
+            );
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Speaking...";
 
-  /* TTS-এও clean text পাঠানো হবে */
+        let d =
+            await r.json();
 
-  let cleanAnswer=
-   cleanVoiceText(answer);
 
-  await speak(cleanAnswer);
+        if(!r.ok){
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Press Speak to talk";
+            throw new Error(
+                d.error ||
+                "AI failed"
+            );
+        }
 
- }catch(e){
 
-  console.error(e);
+        let answer =
+            d.answer ||
+            d.response ||
+            "";
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "AI response failed.";
 
- }
+        /* SAVE HISTORY */
 
+        history.push(
+            {
+                role:"user",
+                content:text
+            },
+            {
+                role:"assistant",
+                content:answer
+            }
+        );
+
+
+        lastQuestion = text;
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Hello AI is answering...";
+
+
+        await typeVoiceAnswer(
+            answer
+        );
+
+
+        /* NORMAL CHAT */
+
+        await addAIMessage(
+            answer
+        );
+
+
+        /* SPEAK ANSWER */
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Speaking...";
+
+
+        await speak(
+            answer
+        );
+
+
+        /* READY */
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Press Speak to talk";
+
+
+    }catch(e){
+
+        console.error(
+            "VOICE ASK ERROR:",
+            e
+        );
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "AI response failed.";
+    }
 }
 
-/* MUTE */
+
+/* =====================================================
+   MUTE
+===================================================== */
 
 function mute(){
 
- muted=!muted;
+    muted = !muted;
 
- let buttons=
-  document.querySelectorAll(
-   ".voice-controls button"
-  );
 
- let b=buttons[1];
+    let b =
+        document.getElementById(
+            "muteButton"
+        );
 
- if(muted){
 
-  b.textContent="🎤 Unmute";
+    if(muted){
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Microphone muted.";
+        b.textContent =
+            "🎤 Unmute";
 
- }else{
 
-  b.textContent="🔇 Mute";
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Microphone muted.";
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Microphone ready.";
+    }else{
 
- }
+        b.textContent =
+            "🔇 Mute";
 
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Microphone ready.";
+    }
 }
 
-/* VOICE PICKER */
-/* এই অংশ আগের মতোই রাখা হয়েছে */
+
+/* =====================================================
+   VOICE PICKER
+===================================================== */
 
 function openPicker(){
 
- document.getElementById("voicePicker")
- .style.display="block";
+    document.getElementById(
+        "voicePicker"
+    ).style.display =
+        "block";
 
- loadVoices();
 
+    loadVoices();
 }
+
 
 function closePicker(){
 
- document.getElementById("voicePicker")
- .style.display="none";
-
+    document.getElementById(
+        "voicePicker"
+    ).style.display =
+        "none";
 }
+
 
 function loadVoices(){
 
- let male=
-  document.getElementById("maleVoices");
+    let male =
+        document.getElementById(
+            "maleVoices"
+        );
 
- let female=
-  document.getElementById("femaleVoices");
 
- male.innerHTML="";
- female.innerHTML="";
+    let female =
+        document.getElementById(
+            "femaleVoices"
+        );
 
- [
-  "shubh","aditya","rahul","rohan",
-  "amit","dev","ratan","varun",
-  "manan","sumit","kabir","aayan"
- ].forEach(
-  v=>createVoice(v,male)
- );
 
- [
-  "ritu","priya","neha","pooja",
-  "simran","kavya","ishita","shreya",
-  "roopa","tanya","shruti","suhani"
- ].forEach(
-  v=>createVoice(v,female)
- );
+    male.innerHTML = "";
 
+    female.innerHTML = "";
+
+
+    [
+        "shubh",
+        "aditya",
+        "rahul",
+        "rohan",
+        "amit",
+        "dev",
+        "ratan",
+        "varun",
+        "manan",
+        "sumit",
+        "kabir",
+        "aayan"
+    ].forEach(
+        v =>
+            createVoice(v,male)
+    );
+
+
+    [
+        "ritu",
+        "priya",
+        "neha",
+        "pooja",
+        "simran",
+        "kavya",
+        "ishita",
+        "shreya",
+        "roopa",
+        "tanya",
+        "shruti",
+        "suhani"
+    ].forEach(
+        v =>
+            createVoice(v,female)
+    );
 }
 
-/* CREATE VOICE */
-/* এই অংশ পরিবর্তন করা হয়নি */
+
+/* =====================================================
+   CREATE VOICE
+===================================================== */
 
 function createVoice(name,parent){
 
- let row=
-  document.createElement("div");
+    let row =
+        document.createElement(
+            "div"
+        );
 
- row.className=
-  "voice-item"+
-  (
-   selectedVoice===name
-   ?" selected"
-   :""
-  );
 
- row.innerHTML=`
-  <span class="voice-name">${name}</span>
+    row.className =
+        "voice-item" +
+        (
+            selectedVoice === name
+            ? " selected"
+            : ""
+        );
 
-  <button class="preview-btn">
-   ▶️ Preview
-  </button>
 
-  <button class="select-btn">
-   ${
-    selectedVoice===name
-    ?"✓ Selected"
-    :"Select"
-   }
-  </button>
- `;
+    row.innerHTML = `
 
- row.querySelector(
-  ".preview-btn"
- ).onclick=e=>{
+        <span class="voice-name">
+            ${escapeHTML(name)}
+        </span>
 
-  e.preventDefault();
-  e.stopPropagation();
+        <button class="preview-btn">
+            ▶ Preview
+        </button>
 
-  previewVoice(name);
+        <button class="select-btn">
+            ${
+                selectedVoice === name
+                ? "✓ Selected"
+                : "Select"
+            }
+        </button>
 
- };
+    `;
 
- row.querySelector(
-  ".select-btn"
- ).onclick=e=>{
 
-  e.preventDefault();
-  e.stopPropagation();
+    row.querySelector(
+        ".preview-btn"
+    ).onclick = e => {
 
-  selectedVoice=name;
+        e.preventDefault();
 
-  localStorage.setItem(
-   "helloAI_voice",
-   selectedVoice
-  );
+        e.stopPropagation();
 
-  loadVoices();
+        previewVoice(
+            name,
+            e.currentTarget
+        );
+    };
 
- };
 
- parent.appendChild(row);
+    row.querySelector(
+        ".select-btn"
+    ).onclick = e => {
 
+        e.preventDefault();
+
+        e.stopPropagation();
+
+
+        selectedVoice = name;
+
+
+        localStorage.setItem(
+            "helloAI_voice",
+            selectedVoice
+        );
+
+
+        loadVoices();
+    };
+
+
+    parent.appendChild(row);
 }
 
-/* PREVIEW */
-/* এই অংশও আগের মতোই */
 
-async function previewVoice(name){
+/* =====================================================
+   VOICE PREVIEW
+===================================================== */
 
- try{
+async function previewVoice(
+    name,
+    button
+){
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Loading "+name+" voice...";
+    try{
 
-  if(audioNow){
+        if(button){
 
-   audioNow.pause();
+            button.classList.add(
+                "loading"
+            );
 
-   audioNow.currentTime=0;
+            button.textContent =
+                "⏳ Loading...";
+        }
 
-  }
 
-  let r=await fetch("/tts",{
-   method:"POST",
-   headers:{
-    "Content-Type":"application/json"
-   },
-   body:JSON.stringify({
-    text:
-     "Hello, I am your AI voice. Nice to meet you.",
-    speaker:name
-   })
-  });
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Loading " +
+            name +
+            " voice...";
 
-  let d=
-   await r.json();
 
-  if(!r.ok){
+        if(audioNow){
 
-   alert(
-    d.error||
-    "Voice preview failed."
-   );
+            audioNow.pause();
 
-   return;
-  }
+            audioNow.currentTime = 0;
+        }
 
-  if(!d.audio){
 
-   alert(
-    "Voice audio পাওয়া যায়নি."
-   );
+        let r =
+            await fetch(
+                "/tts",
+                {
 
-   return;
-  }
+                    method:"POST",
 
-  audioNow=
-   new Audio(
-    "data:audio/wav;base64,"+
-    d.audio
-   );
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
 
-  audioNow.onended=()=>{
+                    body:JSON.stringify({
 
-   document.getElementById("voiceStatus")
-   .textContent=
-    "Press Speak to talk";
+                        text:
+                            "Hello, I am your AI voice. Nice to meet you.",
 
-  };
+                        speaker:name
 
-  await audioNow.play();
+                    })
 
-  document.getElementById("voiceStatus")
-  .textContent=
-   "Playing "+name+"...";
+                }
+            );
 
- }catch(e){
 
-  console.error(e);
+        let d =
+            await r.json();
 
-  alert(
-   "Voice preview চালু করা যাচ্ছে না."
-  );
 
- }
+        if(!r.ok){
 
+            console.error(
+                "VOICE PREVIEW ERROR:",
+                d
+            );
+
+            throw new Error(
+                d.error ||
+                "Voice preview failed"
+            );
+        }
+
+
+        if(!d.audio){
+
+            throw new Error(
+                "No audio returned"
+            );
+        }
+
+
+        audioNow =
+            new Audio(
+                "data:audio/wav;base64," +
+                d.audio
+            );
+
+
+        audioNow.onended = () => {
+
+            document.getElementById(
+                "voiceStatus"
+            ).textContent =
+                "Press Speak to talk";
+        };
+
+
+        await audioNow.play();
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Playing " +
+            name +
+            "...";
+
+
+    }catch(e){
+
+        console.error(
+            "VOICE PREVIEW ERROR:",
+            e
+        );
+
+
+        document.getElementById(
+            "voiceStatus"
+        ).textContent =
+            "Voice preview failed.";
+
+
+        alert(
+            name +
+            " voice preview failed. Check the TTS connection."
+        );
+
+
+    }finally{
+
+        if(button){
+
+            button.classList.remove(
+                "loading"
+            );
+
+            button.textContent =
+                "▶ Preview";
+        }
+    }
 }
 
-/* START */
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(text){
+
+    return String(text)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+/* =====================================================
+   START
+===================================================== */
 
 loadVoices();
 
