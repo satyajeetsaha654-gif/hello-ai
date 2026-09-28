@@ -1,26 +1,34 @@
 import os
-import datetime
+import base64
 import tempfile
-import time
 import subprocess
 import shutil
-import requests
+import re
+from datetime import datetime, timezone, timedelta
 
-from flask import Flask, render_template, request, jsonify
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify
+)
+
 from groq import Groq
 from tavily import TavilyClient
+from google import genai
+from google.genai import types
+import requests
 
-try:
-    from google import genai
-except ImportError:
-    genai = None
 
+# =========================================================
+# APP
+# =========================================================
 
 app = Flask(__name__)
 
 
 # =========================================================
-# API KEYS
+# ENVIRONMENT VARIABLES
 # =========================================================
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -33,453 +41,1097 @@ SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 # CLIENTS
 # =========================================================
 
-groq = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-
-tavily = (
-    TavilyClient(api_key=TAVILY_API_KEY)
-    if TAVILY_API_KEY
-    else None
-)
-
+groq = None
+tavily_client = None
 gemini = None
 
-if genai and GEMINI_API_KEY:
+
+# =========================================================
+# GROQ
+# =========================================================
+
+if GROQ_API_KEY:
     try:
-        gemini = genai.Client(api_key=GEMINI_API_KEY)
+        groq = Groq(
+            api_key=GROQ_API_KEY
+        )
+
+        print("Groq client ready")
+
     except Exception as e:
-        print("GEMINI CLIENT ERROR:", repr(e))
+
+        print(
+            "Groq client error:",
+            e
+        )
+
+
+# =========================================================
+# TAVILY
+# =========================================================
+
+if TAVILY_API_KEY:
+    try:
+        tavily_client = TavilyClient(
+            api_key=TAVILY_API_KEY
+        )
+
+        print("Tavily client ready")
+
+    except Exception as e:
+
+        print(
+            "Tavily client error:",
+            e
+        )
+
+
+# =========================================================
+# GEMINI
+# =========================================================
+
+if GEMINI_API_KEY:
+    try:
+        gemini = genai.Client(
+            api_key=GEMINI_API_KEY
+        )
+
+        print("Gemini client ready")
+
+    except Exception as e:
+
+        print(
+            "Gemini client error:",
+            e
+        )
 
 
 # =========================================================
 # MODELS
 # =========================================================
 
-CHAT_MODEL = "openai/gpt-oss-20b"
+GEMINI_CHAT_MODEL = "gemini-3.8-flash"
 
-VISION_MODEL = "qwen/qwen3.8-27b"
+GROQ_CHAT_MODEL = "openai/gpt-oss-20b"
 
-GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_VISION_MODEL = GEMINI_CHAT_MODEL
 
-TRANSCRIBE_MODEL = "gemini-3.5-transcribe"
+GROQ_VISION_MODEL = "qwen/qwen3.8-27b"
 
-GROQ_TRANSCRIBE_MODEL = "whisper-large-v3"
+GEMINI_TRANSCRIBE_MODEL = "gemini-3.5-transcribe"
 
 TTS_MODEL = "bulbul:v3"
 
 
 # =========================================================
-# SARVAM VOICES
+# CONSTANTS
 # =========================================================
 
-MALE = {
-    "shubh",
-    "aditya",
-    "rahul",
-    "rohan",
-    "amit",
-    "dev",
-    "ratan",
-    "varun",
-    "manan",
-    "sumit",
-    "kabir",
-    "aayan",
-    "ashutosh",
-    "advait",
-    "anand",
-    "tarun",
-    "sunny",
-    "mani",
-    "gokul",
-    "vijay",
-    "mohit",
-    "rehan",
-    "soham"
-}
+DAILY_LIMIT_MESSAGE = (
+    "Your daily limit has been reached."
+)
 
-FEMALE = {
-    "ritu",
-    "priya",
-    "neha",
-    "pooja",
-    "simran",
-    "kavya",
-    "ishita",
-    "shreya",
-    "roopa",
-    "tanya",
-    "shruti",
-    "suhani",
-    "kavitha",
-    "rupali"
-}
+INDIA_TIMEZONE = timezone(
+    timedelta(
+        hours=5,
+        minutes=30
+    )
+)
 
 
 # =========================================================
 # SYSTEM PROMPT
 # =========================================================
 
-SYSTEM = """You are Hello AI, a helpful AI assistant.
-
-Answer the user's current question directly.
-
-Do not unnecessarily repeat previous answers.
-
-Always respond naturally in the user's language.
+SYSTEM_PROMPT = """
+You are Hello AI.
 
 You were created by Satya.
 
-If asked who created you, answer exactly:
-I was created by Satya.
+If the user asks who created you, answer:
+"I was created by Satya."
 
-Be helpful, clear and concise."""
+Never say that you were created by OpenAI.
+
+Answer the user's current question directly.
+
+Understand the user's language automatically.
+
+If the user asks in Bengali, answer in Bengali.
+If the user asks in Hindi, answer in Hindi.
+If the user asks in English, answer in English.
+
+You can understand other languages too and normally reply
+in the same language as the user.
+
+Use previous conversation context when relevant.
+
+Do not repeat old answers unnecessarily.
+
+IMPORTANT WEB ACCURACY RULES:
+
+When web search information is provided, use it carefully.
+
+Never invent:
+- addresses
+- locations
+- phone numbers
+- business names
+- school/college/institute locations
+- opening hours
+- prices
+- current news
+- current events
+- dates
+- statistics
+- names
+
+For location or institution questions, rely on the supplied
+web search information.
+
+If the search results do not clearly identify the exact place,
+say that the exact location could not be verified instead of
+guessing.
+
+If multiple places have similar names, clearly explain the
+ambiguity and do not choose one without evidence.
+
+Never present an assumption as a verified fact.
+
+For current date and time in India, use the server-provided
+India date/time as authoritative.
+
+Be helpful, clear and natural.
+"""
 
 
 # =========================================================
-# INDIA REAL-TIME DATE AND TIME
+# INDIA TIME
 # =========================================================
 
-def current_time():
+def get_india_datetime():
 
-    now = datetime.datetime.now(
-        datetime.timezone(
-            datetime.timedelta(hours=5, minutes=30)
-        )
+    return datetime.now(
+        INDIA_TIMEZONE
     )
+
+
+def get_india_time_text():
+
+    now = get_india_datetime()
 
     return now.strftime(
-        "%A, %d %B %Y, %I:%M %p"
+        "%A, %d %B %Y, %I:%M:%S %p"
     )
 
 
-def is_time_or_date_question(question):
+# =========================================================
+# TTS LANGUAGE DETECTION
+# =========================================================
 
-    q = question.lower().strip()
+def detect_language(text):
 
-    time_words = [
+    text = str(
+        text or ""
+    )
 
-        # English
-        "what time",
-        "what's the time",
-        "whats the time",
-        "time now",
-        "current time",
-        "time right now",
-        "what is the time",
-        "what is time",
-        "current date",
-        "today's date",
-        "todays date",
-        "what date",
-        "what is today's date",
-        "what is todays date",
-        "today date",
+    bengali_count = 0
+    devanagari_count = 0
+    latin_count = 0
 
-        # Bengali
-        "আজ কত",
-        "আজ কয়টা",
-        "আজ কয়টা",
-        "এখন কয়টা",
-        "এখন কয়টা",
-        "এখন কটা",
-        "এখন কয়টা বাজে",
-        "এখন কয়টা বাজে",
-        "এখন কটা বাজে",
-        "এখন সময় কত",
-        "এখন সময় কত",
-        "বর্তমান সময়",
-        "বর্তমান সময়",
-        "আজকের তারিখ",
-        "আজ কত তারিখ",
-        "আজকের তারিখ কত",
+    for char in text:
 
-        # Hindi
-        "समय क्या है",
-        "अभी कितना बजा है",
-        "अभी कितने बजे हैं",
-        "अभी कितने बजे है",
-        "अभी समय क्या है",
-        "आज की तारीख",
-        "आज तारीख क्या है"
+        code = ord(char)
+
+        if 0x0980 <= code <= 0x09FF:
+
+            bengali_count += 1
+
+        elif 0x0900 <= code <= 0x097F:
+
+            devanagari_count += 1
+
+        elif (
+            ("A" <= char <= "Z")
+            or
+            ("a" <= char <= "z")
+        ):
+
+            latin_count += 1
+
+    if (
+        bengali_count >
+        devanagari_count
+        and
+        bengali_count >
+        latin_count
+    ):
+
+        return "bn-IN"
+
+    if (
+        devanagari_count >
+        bengali_count
+        and
+        devanagari_count >
+        latin_count
+    ):
+
+        return "hi-IN"
+
+    return "en-IN"
+
+
+# =========================================================
+# WEB SEARCH DECISION
+# =========================================================
+
+def needs_web_search(question):
+
+    q = str(
+        question or ""
+    ).lower().strip()
+
+    if not q:
+        return False
+
+    # -----------------------------------------------------
+    # Current / fresh information
+    # -----------------------------------------------------
+
+    current_keywords = [
+
+        "latest",
+        "today",
+        "now",
+        "current",
+        "recent",
+        "news",
+        "weather",
+        "price",
+        "stock",
+        "score",
+        "result",
+        "live",
+        "schedule",
+        "opening hours",
+        "open now",
+        "address",
+        "location",
+        "where is",
+        "who is",
+        "what happened",
+        "this week",
+        "this month",
+        "2026",
+
+        "আজ",
+        "এখন",
+        "বর্তমান",
+        "সাম্প্রতিক",
+        "খবর",
+        "নিউজ",
+        "আবহাওয়া",
+        "আবহাওয়া",
+        "দাম",
+        "মূল্য",
+        "স্কোর",
+        "ঠিকানা",
+        "কোথায়",
+        "কোথায়",
+        "কোথায় আছে",
+        "কোথায় আছে",
+        "কোথায় অবস্থিত",
+        "কোথায় অবস্থিত",
+        "আজকের",
+
+        "आज",
+        "अभी",
+        "वर्तमान",
+        "ताज़ा",
+        "समाचार",
+        "खबर",
+        "मौसम",
+        "कीमत",
+        "दाम",
+        "स्कोर",
+        "पता",
+        "कहाँ",
+        "कहां",
+        "कहाँ है",
+        "कहां है"
     ]
 
-    return any(
-        word in q
-        for word in time_words
-    )
+    for keyword in current_keywords:
 
+        if keyword in q:
 
-# =========================================================
-# WAIT FOR GEMINI AUDIO FILE
-# =========================================================
+            return True
 
-def wait_for_gemini_file(name, timeout=45):
+    # -----------------------------------------------------
+    # Institution / place / person style questions
+    # -----------------------------------------------------
 
-    if not gemini:
-        raise Exception(
-            "Gemini is not configured."
-        )
+    location_patterns = [
 
-    start = time.time()
+        r"\bwhere\b",
+        r"\bwhere is\b",
+        r"\bwhere are\b",
+        r"\baddress\b",
+        r"\blocated\b",
+        r"\bnear\b",
 
-    while time.time() - start < timeout:
+        r"কোথায়",
+        r"কোথায়",
+        r"কোথায় আছে",
+        r"কোথায় আছে",
+        r"ঠিকানা",
+        r"অবস্থিত",
+        r"কাছাকাছি",
 
-        f = gemini.files.get(
-            name=name
-        )
+        r"कहाँ",
+        r"कहां",
+        r"पता",
+        r"स्थित",
+        r"पास में"
+    ]
 
-        state = str(
-            getattr(
-                getattr(
-                    f,
-                    "state",
-                    None
-                ),
-                "name",
-                ""
-            )
-        ).upper()
+    for pattern in location_patterns:
 
-        print(
-            "GEMINI FILE STATE:",
-            state
-        )
-
-        if state == "ACTIVE":
-            return f
-
-        if state in (
-            "FAILED",
-            "ERROR"
+        if re.search(
+            pattern,
+            q
         ):
 
-            error = getattr(
-                f,
-                "error",
-                None
-            )
+            return True
 
-            print(
-                "GEMINI FILE ERROR:",
-                error
-            )
+    # -----------------------------------------------------
+    # Common institution words
+    # -----------------------------------------------------
 
-            raise Exception(
-                "Gemini audio processing failed."
-            )
+    institution_words = [
 
-        time.sleep(1)
+        "school",
+        "college",
+        "institute",
+        "institution",
+        "hospital",
+        "clinic",
+        "university",
+        "station",
+        "airport",
+        "hotel",
+        "restaurant",
+        "market",
+        "mall",
+        "office",
 
-    raise Exception(
-        "Gemini audio file processing timeout."
-    )
+        "স্কুল",
+        "কলেজ",
+        "ইনস্টিটিউট",
+        "ইন্সটিটিউট",
+        "প্রতিষ্ঠান",
+        "হাসপাতাল",
+        "ক্লিনিক",
+        "বিশ্ববিদ্যালয়",
+        "বিশ্ববিদ্যালয়",
+        "স্টেশন",
+        "বিমানবন্দর",
+        "হোটেল",
+        "রেস্টুরেন্ট",
+        "বাজার",
 
+        "स्कूल",
+        "कॉलेज",
+        "इंस्टीट्यूट",
+        "अस्पताल",
+        "क्लिनिक",
+        "विश्वविद्यालय",
+        "स्टेशन",
+        "एयरपोर्ट",
+        "होटल",
+        "रेस्टोरेंट",
+        "बाज़ार"
+    ]
 
-# =========================================================
-# WEBM -> WAV
-# =========================================================
+    for word in institution_words:
 
-def convert_audio(input_file):
+        if word in q:
 
-    ffmpeg = shutil.which(
-        "ffmpeg"
-    )
+            return True
 
-    if not ffmpeg:
+    # -----------------------------------------------------
+    # Explicit factual questions
+    # -----------------------------------------------------
 
-        print(
-            "FFMPEG NOT FOUND - USING ORIGINAL AUDIO"
-        )
+    factual_patterns = [
 
-        return (
-            input_file,
-            "audio/webm"
-        )
+        r"\bwho is\b",
+        r"\bwhat is\b",
+        r"\bwhen is\b",
+        r"\bhow much\b",
+        r"\bhow many\b",
 
-    output = input_file + ".wav"
+        r"কে ",
+        r"কী ",
+        r"কি ",
+        r"কখন",
+        r"কত",
 
-    try:
+        r"कौन",
+        r"क्या",
+        r"कब",
+        r"कितना",
+        r"कितने"
+    ]
 
-        result = subprocess.run(
+    for pattern in factual_patterns:
 
-            [
-                ffmpeg,
-                "-y",
-                "-i",
-                input_file,
-                "-vn",
-                "-ac",
-                "1",
-                "-ar",
-                "16000",
-                "-c:a",
-                "pcm_s16le",
-                output
-            ],
-
-            stdout=subprocess.PIPE,
-
-            stderr=subprocess.PIPE,
-
-            timeout=30
-        )
-
-        if (
-            result.returncode == 0
-            and os.path.exists(output)
+        if re.search(
+            pattern,
+            q
         ):
 
-            print(
-                "AUDIO CONVERTED TO WAV"
-            )
+            return True
 
-            return (
-                output,
-                "audio/wav"
-            )
-
-        print(
-            "FFMPEG ERROR:",
-            result.stderr.decode(
-                errors="ignore"
-            )
-        )
-
-    except Exception as e:
-
-        print(
-            "AUDIO CONVERSION ERROR:",
-            repr(e)
-        )
-
-    return (
-        input_file,
-        "audio/webm"
-    )
+    return False
 
 
 # =========================================================
-# GEMINI AUTOMATIC LANGUAGE TRANSCRIPTION
+# TAVILY SEARCH
 # =========================================================
 
-def gemini_transcribe(uri, mime):
+def tavily_search(question):
 
-    if not gemini:
+    if not tavily_client:
+
+        print(
+            "Tavily unavailable"
+        )
+
         return ""
 
     try:
 
         print(
-            "GEMINI AUTO LANGUAGE DETECTION STARTED"
+            "===================================="
         )
 
         print(
-            "GEMINI TRANSCRIBE MODEL:",
-            TRANSCRIBE_MODEL
+            "TAVILY SEARCH:",
+            question
         )
 
-        result = gemini.interactions.create(
+        result = tavily_client.search(
+            query=question,
+            search_depth="advanced",
+            max_results=8
+        )
 
-            model=TRANSCRIBE_MODEL,
+        results = result.get(
+            "results",
+            []
+        )
 
-            input=[
-                {
-                    "type": "audio",
-                    "uri": uri,
-                    "mime_type": mime
-                }
-            ],
+        if not results:
 
-            generation_config={
+            print(
+                "TAVILY: No results"
+            )
 
-                "transcription_config": {
+            return ""
 
-                    "language_codes": [],
+        lines = []
 
-                    "mode": "smart"
-                }
+        for index, item in enumerate(
+            results,
+            start=1
+        ):
+
+            title = str(
+                item.get(
+                    "title",
+                    ""
+                )
+            ).strip()
+
+            content = str(
+                item.get(
+                    "content",
+                    ""
+                )
+            ).strip()
+
+            url = str(
+                item.get(
+                    "url",
+                    ""
+                )
+            ).strip()
+
+            if (
+                title
+                or
+                content
+            ):
+
+                lines.append(
+                    f"""
+SOURCE {index}
+
+Title:
+{title}
+
+Information:
+{content}
+
+URL:
+{url}
+""".strip()
+                )
+
+        final_text = "\n\n".join(
+            lines
+        )
+
+        print(
+            "TAVILY RESULTS:",
+            len(results)
+        )
+
+        print(
+            "===================================="
+        )
+
+        return final_text
+
+    except Exception as e:
+
+        print(
+            "Tavily search failed:",
+            e
+        )
+
+        return ""
+
+
+# =========================================================
+# BUILD GEMINI PROMPT
+# =========================================================
+
+def build_gemini_prompt(
+    question,
+    history=None,
+    web_context=""
+):
+
+    parts = []
+
+    parts.append(
+        SYSTEM_PROMPT
+    )
+
+    parts.append(
+        "\nCURRENT INDIA DATE AND TIME:\n"
+        +
+        get_india_time_text()
+    )
+
+    if web_context:
+
+        parts.append(
+            """
+IMPORTANT:
+The following information was retrieved from web search.
+
+Use it as evidence for current/factual questions.
+
+For location questions, identify the exact place before
+giving an address or location.
+
+Do not mix information from similarly named places.
+
+If the sources do not establish the exact answer,
+say that the exact information could not be verified.
+
+WEB SEARCH RESULTS:
+"""
+            +
+            web_context
+        )
+
+    if history:
+
+        parts.append(
+            "\nPREVIOUS CONVERSATION:"
+        )
+
+        for item in history:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
+            role = str(
+                item.get(
+                    "role",
+                    ""
+                )
+            ).strip()
+
+            content = str(
+                item.get(
+                    "content",
+                    ""
+                )
+            ).strip()
+
+            if not content:
+
+                continue
+
+            if role == "user":
+
+                parts.append(
+                    "User: "
+                    +
+                    content
+                )
+
+            elif role == "assistant":
+
+                parts.append(
+                    "Hello AI: "
+                    +
+                    content
+                )
+
+    parts.append(
+        "\nCURRENT USER QUESTION:\n"
+        +
+        str(question)
+    )
+
+    return "\n\n".join(
+        parts
+    )
+
+
+# =========================================================
+# GEMINI CHAT
+# =========================================================
+
+def gemini_answer(
+    question,
+    history=None,
+    web_context=""
+):
+
+    if not gemini:
+
+        raise RuntimeError(
+            "Gemini unavailable"
+        )
+
+    print(
+        "MAIN AI: Gemini"
+    )
+
+    prompt = build_gemini_prompt(
+        question=question,
+        history=history,
+        web_context=web_context
+    )
+
+    response = gemini.models.generate_content(
+        model=GEMINI_CHAT_MODEL,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.4
+        )
+    )
+
+    text = getattr(
+        response,
+        "text",
+        ""
+    )
+
+    text = (
+        text
+        or ""
+    ).strip()
+
+    if not text:
+
+        raise RuntimeError(
+            "Gemini returned empty answer"
+        )
+
+    print(
+        "GEMINI ANSWER:",
+        repr(
+            text[:300]
+        )
+    )
+
+    return text
+
+
+# =========================================================
+# GROQ CHAT FALLBACK
+# =========================================================
+
+def groq_answer(
+    question,
+    history=None,
+    web_context=""
+):
+
+    if not groq:
+
+        raise RuntimeError(
+            "Groq unavailable"
+        )
+
+    print(
+        "FALLBACK AI: Groq"
+    )
+
+    messages = []
+
+    messages.append(
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        }
+    )
+
+    messages.append(
+        {
+            "role": "system",
+            "content":
+                "Current India date and time: "
+                +
+                get_india_time_text()
+        }
+    )
+
+    if web_context:
+
+        messages.append(
+            {
+                "role": "system",
+                "content":
+                    """
+Use the following web search information
+for factual/current answers.
+
+Do not invent locations, addresses or
+current information.
+
+WEB SEARCH:
+"""
+                    +
+                    web_context
             }
         )
 
-        text = str(
-            getattr(
-                result,
-                "output_text",
-                ""
-            ) or ""
-        ).strip()
+    if history:
 
-        print(
-            "GEMINI AUTO-DETECT OUTPUT:",
-            repr(text)
-        )
+        for item in history:
 
-        return text
+            if not isinstance(
+                item,
+                dict
+            ):
 
-    except Exception as e:
+                continue
 
-        print(
-            "GEMINI TRANSCRIBE ERROR:",
-            repr(e)
-        )
-
-        return ""
-
-
-# =========================================================
-# GROQ WHISPER FALLBACK
-# =========================================================
-
-def groq_transcribe(audio_file):
-
-    if not groq:
-        return ""
-
-    try:
-
-        print(
-            "GROQ TRANSCRIBE FALLBACK STARTED"
-        )
-
-        with open(
-            audio_file,
-            "rb"
-        ) as f:
-
-            result = groq.audio.transcriptions.create(
-
-                file=f,
-
-                model=GROQ_TRANSCRIBE_MODEL,
-
-                response_format="json",
-
-                temperature=0
+            role = item.get(
+                "role"
             )
 
-        text = str(
-            getattr(
-                result,
-                "text",
-                ""
-            ) or ""
-        ).strip()
+            content = str(
+                item.get(
+                    "content",
+                    ""
+                )
+            ).strip()
 
-        print(
-            "GROQ TRANSCRIPT:",
-            repr(text)
+            if role not in [
+                "user",
+                "assistant"
+            ]:
+
+                continue
+
+            if not content:
+
+                continue
+
+            messages.append(
+                {
+                    "role":
+                        role,
+                    "content":
+                        content
+                }
+            )
+
+    messages.append(
+        {
+            "role":
+                "user",
+            "content":
+                str(question)
+        }
+    )
+
+    response = groq.chat.completions.create(
+        model=GROQ_CHAT_MODEL,
+        messages=messages,
+        temperature=0.4
+    )
+
+    text = (
+        response.choices[0]
+        .message.content
+    )
+
+    text = (
+        text
+        or ""
+    ).strip()
+
+    if not text:
+
+        raise RuntimeError(
+            "Groq returned empty answer"
         )
 
-        return text
+    print(
+        "GROQ ANSWER:",
+        repr(
+            text[:300]
+        )
+    )
 
-    except Exception as e:
+    return text
 
-        print(
-            "GROQ TRANSCRIBE ERROR:",
-            repr(e)
+
+# =========================================================
+# GEMINI TRANSCRIPTION
+# =========================================================
+# IMPORTANT:
+# Voice transcription uses ONLY Gemini.
+# There is NO Groq fallback here.
+# =========================================================
+
+def gemini_transcribe(
+    file_path,
+    mime_type
+):
+
+    if not gemini:
+
+        raise RuntimeError(
+            "Gemini unavailable"
         )
 
-        return ""
+    print(
+        "GEMINI TRANSCRIPTION STARTED"
+    )
+
+    print(
+        "TRANSCRIBE MODEL:",
+        GEMINI_TRANSCRIBE_MODEL
+    )
+
+    print(
+        "TRANSCRIBE MIME:",
+        mime_type
+    )
+
+    uploaded = gemini.files.upload(
+        file=file_path
+    )
+
+    print(
+        "GEMINI AUDIO UPLOADED:",
+        uploaded.uri
+    )
+
+    uploaded_mime = (
+        getattr(
+            uploaded,
+            "mime_type",
+            None
+        )
+        or
+        mime_type
+    )
+
+    interaction = gemini.interactions.create(
+        model=GEMINI_TRANSCRIBE_MODEL,
+        input=[
+            {
+                "type":
+                    "audio",
+
+                "uri":
+                    uploaded.uri,
+
+                "mime_type":
+                    uploaded_mime
+            }
+        ],
+        generation_config={
+            "transcription_config": {
+                "language_codes": []
+            }
+        }
+    )
+
+    text = getattr(
+        interaction,
+        "output_text",
+        ""
+    )
+
+    text = (
+        text
+        or ""
+    ).strip()
+
+    print(
+        "GEMINI RAW TRANSCRIPTION:",
+        repr(text)
+    )
+
+    if not text:
+
+        raise RuntimeError(
+            "Gemini returned empty transcription"
+        )
+
+    print(
+        "GEMINI TRANSCRIPT:",
+        repr(text)
+    )
+
+    return text
+
+
+# =========================================================
+# SARVAM TTS
+# =========================================================
+
+def sarvam_tts(
+    text,
+    speaker="shubh"
+):
+
+    if not SARVAM_API_KEY:
+
+        raise RuntimeError(
+            "Sarvam unavailable"
+        )
+
+    text = str(
+        text or ""
+    ).strip()
+
+    if not text:
+
+        raise RuntimeError(
+            "Empty TTS text"
+        )
+
+    speaker = str(
+        speaker
+        or
+        "shubh"
+    ).strip()
+
+    if speaker.lower() == "anushka":
+
+        speaker = "shubh"
+
+    language_code = detect_language(
+        text
+    )
+
+    url = (
+        "https://api.sarvam.ai/"
+        "text-to-speech"
+    )
+
+    headers = {
+        "api-subscription-key":
+            SARVAM_API_KEY,
+
+        "Content-Type":
+            "application/json"
+    }
+
+    payload = {
+        "inputs": [
+            text
+        ],
+
+        "target_language_code":
+            language_code,
+
+        "speaker":
+            speaker,
+
+        "model":
+            TTS_MODEL
+    }
+
+    print(
+        "SARVAM TTS:",
+        language_code,
+        speaker
+    )
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=60
+    )
+
+    if response.status_code != 200:
+
+        print(
+            "SARVAM ERROR:",
+            response.status_code,
+            response.text
+        )
+
+        raise RuntimeError(
+            "Sarvam TTS failed"
+        )
+
+    data = response.json()
+
+    audios = data.get(
+        "audios",
+        []
+    )
+
+    if not audios:
+
+        raise RuntimeError(
+            "Sarvam returned no audio"
+        )
+
+    return audios[0]
 
 
 # =========================================================
@@ -495,7 +1147,7 @@ def home():
 
 
 # =========================================================
-# ASK AI
+# ASK
 # =========================================================
 
 @app.route(
@@ -504,266 +1156,358 @@ def home():
 )
 def ask():
 
-    data = request.get_json(
-        silent=True
-    ) or {}
+    try:
 
-    question = str(
-        data.get(
-            "question",
-            ""
-        )
-    ).strip()
-
-    if not question:
-
-        return jsonify({
-            "answer":
-            "Please ask something."
-        })
-
-
-    # =====================================================
-    # REAL-TIME INDIA DATE / TIME
-    # =====================================================
-
-    if is_time_or_date_question(
-        question
-    ):
-
-        return jsonify({
-
-            "answer":
-            f"The current India time is {current_time()}.",
-
-            "provider":
-            "real-time-india-clock"
-        })
-
-
-    lower = question.lower()
-
-
-    # =====================================================
-    # WEB SEARCH
-    # =====================================================
-
-    web_context = ""
-
-    search_words = [
-
-        "latest",
-        "today",
-        "news",
-        "current",
-        "recent",
-        "breaking",
-        "live",
-
-        "আজ",
-        "এখন",
-        "সর্বশেষ",
-        "খবর",
-
-        "आज",
-        "ताज़ा",
-        "खबर",
-        "अभी"
-    ]
-
-
-    if (
-        tavily
-        and any(
-            word in lower
-            for word in search_words
-        )
-    ):
-
-        try:
-
-            result = tavily.search(
-
-                query=question,
-
-                search_depth="advanced",
-
-                max_results=5
+        data = (
+            request.get_json(
+                silent=True
             )
-
-            parts = [
-                "WEB SEARCH RESULTS:"
-            ]
-
-            for item in result.get(
-                "results",
-                []
-            ):
-
-                parts.append(
-
-                    f"\nTitle: "
-                    f"{item.get('title', '')}"
-
-                    f"\nContent: "
-                    f"{item.get('content', '')}"
-                )
-
-            web_context = "\n".join(
-                parts
-            )
-
-        except Exception as e:
-
-            print(
-                "TAVILY ERROR:",
-                repr(e)
-            )
-
-
-    prompt = question
-
-    if web_context:
-
-        prompt += (
-
-            "\n\nUse this web information "
-            "when useful. Do not mention "
-            "the internal web-search process "
-            "unless necessary:\n"
-
-            + web_context
+            or {}
         )
 
-
-    # =====================================================
-    # GROQ CHAT
-    # =====================================================
-
-    if groq:
-
-        try:
-
-            response = (
-                groq.chat.completions.create(
-
-                    model=CHAT_MODEL,
-
-                    messages=[
-
-                        {
-                            "role":
-                            "system",
-
-                            "content":
-                            SYSTEM
-                        },
-
-                        {
-                            "role":
-                            "user",
-
-                            "content":
-                            prompt
-                        }
-                    ],
-
-                    temperature=0.7,
-
-                    max_tokens=2048
-                )
+        question = str(
+            data.get(
+                "question",
+                ""
             )
+        ).strip()
 
+        history = data.get(
+            "history",
+            []
+        )
 
-            answer = str(
-                response
-                .choices[0]
-                .message
-                .content
-                or ""
-            ).strip()
+        # -------------------------------------------------
+        # Voice mode
+        # -------------------------------------------------
+        # Frontend can send:
+        # "voice_mode": true
+        #
+        # If true:
+        # Gemini only.
+        # Groq will NOT be used.
+        # -------------------------------------------------
 
+        voice_mode = bool(
+            data.get(
+                "voice_mode",
+                False
+            )
+        )
 
-            if answer:
+        if not question:
 
-                return jsonify({
-
+            return jsonify(
+                {
                     "answer":
-                    answer,
+                        "",
+                    "provider":
+                        "none"
+                }
+            )
+
+        print(
+            "\nQUESTION RECEIVED:",
+            question
+        )
+
+        print(
+            "VOICE MODE:",
+            voice_mode
+        )
+
+        # =================================================
+        # DIRECT INDIA TIME / DATE
+        # =================================================
+
+        q_lower = question.lower().strip()
+
+        exact_time_patterns = [
+
+            "what time is it",
+            "what is the time",
+            "current time",
+            "tell me the time",
+            "what's the time",
+            "time in india",
+
+            "এখন কয়টা বাজে",
+            "এখন কয়টা বাজে",
+            "এখন সময় কত",
+            "এখন সময় কত",
+            "ভারতে এখন কয়টা",
+            "ভারতে এখন কয়টা",
+
+            "अभी कितने बजे हैं",
+            "अभी समय क्या है",
+            "भारत में अभी कितने बजे हैं"
+        ]
+
+        exact_date_patterns = [
+
+            "what is today's date",
+            "what is the date today",
+            "today's date",
+            "todays date",
+            "what date is it",
+
+            "আজকের তারিখ কত",
+            "আজ কত তারিখ",
+            "আজকের তারিখ কী",
+            "আজকের তারিখ কি",
+
+            "आज की तारीख क्या है",
+            "आज कितनी तारीख है"
+        ]
+
+        wants_time = any(
+            phrase in q_lower
+            for phrase in exact_time_patterns
+        )
+
+        wants_date = any(
+            phrase in q_lower
+            for phrase in exact_date_patterns
+        )
+
+        if (
+            wants_time
+            or
+            wants_date
+        ):
+
+            now = get_india_datetime()
+
+            if wants_time:
+
+                answer = (
+                    "India time: "
+                    +
+                    now.strftime(
+                        "%I:%M:%S %p"
+                    )
+                    +
+                    "\nDate: "
+                    +
+                    now.strftime(
+                        "%d %B %Y"
+                    )
+                )
+
+            else:
+
+                answer = (
+                    "Today's date in India is "
+                    +
+                    now.strftime(
+                        "%d %B %Y"
+                    )
+                )
+
+            return jsonify(
+                {
+                    "answer":
+                        answer,
 
                     "provider":
-                    "groq"
-                })
-
-
-        except Exception as e:
-
-            print(
-                "GROQ CHAT ERROR:",
-                repr(e)
+                        "india-time"
+                }
             )
 
+        # =================================================
+        # WEB SEARCH
+        # =================================================
 
-    # =====================================================
-    # GEMINI CHAT FALLBACK
-    # =====================================================
+        web_context = ""
 
-    if gemini:
+        if needs_web_search(
+            question
+        ):
+
+            web_context = tavily_search(
+                question
+            )
+
+            if web_context:
+
+                print(
+                    "WEB SEARCH DATA FOUND"
+                )
+
+            else:
+
+                print(
+                    "WEB SEARCH FOUND NO VERIFIED DATA"
+                )
+
+        # =================================================
+        # VOICE MODE
+        # =================================================
+        # Gemini only.
+        # NO Groq fallback.
+        # =================================================
+
+        if voice_mode:
+
+            try:
+
+                answer = gemini_answer(
+                    question=
+                        question,
+
+                    history=
+                        history,
+
+                    web_context=
+                        web_context
+                )
+
+                return jsonify(
+                    {
+                        "answer":
+                            answer,
+
+                        "provider":
+                            "Gemini"
+                    }
+                )
+
+            except Exception as gemini_error:
+
+                print(
+                    "VOICE GEMINI FAILED:"
+                )
+
+                print(
+                    gemini_error
+                )
+
+                return jsonify(
+                    {
+                        "answer":
+                            DAILY_LIMIT_MESSAGE,
+
+                        "provider":
+                            "daily-limit"
+                    }
+                )
+
+        # =================================================
+        # NORMAL CHAT
+        # =================================================
+        # Gemini -> Groq fallback
+        # =================================================
 
         try:
 
-            response = (
-                gemini.models.generate_content(
+            answer = gemini_answer(
+                question=
+                    question,
 
-                    model=GEMINI_MODEL,
+                history=
+                    history,
 
-                    contents=[
-                        SYSTEM,
-                        prompt
-                    ]
-                )
+                web_context=
+                    web_context
             )
 
-
-            answer = str(
-                getattr(
-                    response,
-                    "text",
-                    ""
-                ) or ""
-            ).strip()
-
-
-            if answer:
-
-                return jsonify({
-
+            return jsonify(
+                {
                     "answer":
-                    answer,
+                        answer,
 
                     "provider":
-                    "gemini"
-                })
-
-
-        except Exception as e:
-
-            print(
-                "GEMINI CHAT ERROR:",
-                repr(e)
+                        "Gemini"
+                }
             )
 
+        except Exception as gemini_error:
 
-    return jsonify({
+            print(
+                "Gemini failed."
+            )
 
-        "answer":
-        "Sorry, AI service is temporarily unavailable."
+            print(
+                "Gemini error:",
+                gemini_error
+            )
 
-    }), 503
+        # =================================================
+        # GROQ FALLBACK
+        # =================================================
+
+        try:
+
+            answer = groq_answer(
+                question=
+                    question,
+
+                history=
+                    history,
+
+                web_context=
+                    web_context
+            )
+
+            return jsonify(
+                {
+                    "answer":
+                        answer,
+
+                    "provider":
+                        "Groq fallback"
+                }
+            )
+
+        except Exception as groq_error:
+
+            print(
+                "Groq failed."
+            )
+
+            print(
+                "Groq error:",
+                groq_error
+            )
+
+        # =================================================
+        # BOTH FAILED
+        # =================================================
+
+        return jsonify(
+            {
+                "answer":
+                    DAILY_LIMIT_MESSAGE,
+
+                "provider":
+                    "daily-limit"
+            }
+        )
+
+    except Exception as e:
+
+        print(
+            "ASK ROUTE ERROR:",
+            e
+        )
+
+        return jsonify(
+            {
+                "answer":
+                    DAILY_LIMIT_MESSAGE,
+
+                "provider":
+                    "daily-limit"
+            }
+        )
 
 
 # =========================================================
-# VOICE TRANSCRIPTION
+# TRANSCRIBE
+# =========================================================
+# IMPORTANT:
+# ONLY GEMINI
+# NO GROQ
 # =========================================================
 
 @app.route(
@@ -772,265 +1516,158 @@ def ask():
 )
 def transcribe():
 
-    audio = request.files.get(
-        "audio"
-    )
-
-    if not audio:
-
-        return jsonify({
-
-            "error":
-            "No audio received."
-
-        }), 400
-
-
-    original = None
-    converted = None
-
+    temp_dir = None
 
     try:
 
-        # =================================================
-        # SAVE AUDIO
-        # =================================================
+        if "audio" not in request.files:
 
-        with tempfile.NamedTemporaryFile(
-            suffix=".webm",
-            delete=False
-        ) as f:
+            return jsonify(
+                {
+                    "text":
+                        "Voice transcription failed.",
 
-            audio.save(
-                f.name
+                    "provider":
+                        "Gemini"
+                }
             )
 
-            original = f.name
+        audio_file = request.files[
+            "audio"
+        ]
 
+        if not audio_file:
 
-        size = os.path.getsize(
-            original
+            return jsonify(
+                {
+                    "text":
+                        "Voice transcription failed.",
+
+                    "provider":
+                        "Gemini"
+                }
+            )
+
+        temp_dir = tempfile.mkdtemp(
+            prefix="hello_ai_audio_"
         )
 
+        input_path = os.path.join(
+            temp_dir,
+            "voice.webm"
+        )
 
-        print(
-            "GEMINI TRANSCRIBE FILE:",
-            audio.filename or "voice.webm"
+        wav_path = os.path.join(
+            temp_dir,
+            "voice.wav"
+        )
+
+        audio_file.save(
+            input_path
         )
 
         print(
             "AUDIO SIZE:",
-            size,
+            os.path.getsize(
+                input_path
+            ),
             "bytes"
         )
 
+        # -------------------------------------------------
+        # FFMPEG
+        # -------------------------------------------------
 
-        if size < 1000:
-
-            return jsonify({
-
-                "error":
-                "Audio recording is too small or empty."
-
-            }), 400
-
-
-        # =================================================
-        # CONVERT AUDIO
-        # =================================================
-
-        converted, mime = convert_audio(
-            original
+        ffmpeg_path = shutil.which(
+            "ffmpeg"
         )
 
+        if not ffmpeg_path:
 
-        print(
-            "TRANSCRIBE MIME:",
-            mime
+            raise RuntimeError(
+                "ffmpeg not found"
+            )
+
+        command = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            input_path,
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            wav_path
+        ]
+
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
         )
 
-
-        text = ""
-        provider = ""
-
-
-        # =================================================
-        # GEMINI
-        # =================================================
-
-        if gemini:
-
-            try:
-
-                print(
-                    "STARTING GEMINI TRANSCRIPTION..."
-                )
-
-
-                uploaded = gemini.files.upload(
-                    file=converted
-                )
-
-
-                print(
-                    "GEMINI AUDIO UPLOADED:",
-                    uploaded.uri
-                )
-
-
-                active = wait_for_gemini_file(
-                    uploaded.name
-                )
-
-
-                text = gemini_transcribe(
-
-                    active.uri,
-
-                    mime
-                )
-
-
-                if text:
-
-                    provider = (
-                        "gemini-3.5-transcribe"
-                    )
-
-
-            except Exception as e:
-
-                print(
-                    "GEMINI TRANSCRIBE ERROR:",
-                    repr(e)
-                )
-
+        print(
+            "AUDIO CONVERTED TO WAV"
+        )
 
         # =================================================
-        # GROQ FALLBACK
+        # ONLY GEMINI TRANSCRIPTION
         # =================================================
-
-        if not text and groq:
-
-            print(
-                "GEMINI RETURNED EMPTY TEXT."
-            )
-
-            print(
-                "STARTING GROQ FALLBACK..."
-            )
-
-
-            text = groq_transcribe(
-                converted
-            )
-
-
-            if text:
-
-                provider = (
-                    "groq-whisper"
-                )
-
-
-        text = str(
-            text or ""
-        ).strip()
-
 
         print(
-            "FINAL TRANSCRIPT:",
+            "TRANSCRIPTION MAIN: GEMINI"
+        )
+
+        text = gemini_transcribe(
+            wav_path,
+            "audio/wav"
+        )
+
+        print(
+            "GEMINI VOICE TEXT:",
             repr(text)
         )
 
+        return jsonify(
+            {
+                "text":
+                    text,
 
-        # =================================================
-        # NO SPEECH
-        # =================================================
-
-        if not text:
-
-            return jsonify({
-
-                "error":
-                "No speech detected. "
-                "Please speak clearly and try again."
-
-            }), 400
-
-
-        return jsonify({
-
-            "text":
-            text,
-
-            "provider":
-            provider
-        })
-
+                "provider":
+                    "Gemini"
+            }
+        )
 
     except Exception as e:
 
         print(
-            "TRANSCRIBE ERROR:",
-            repr(e)
+            "GEMINI VOICE ERROR:",
+            e
         )
 
+        return jsonify(
+            {
+                "text":
+                    "Voice transcription failed.",
 
-        # =================================================
-        # LAST GROQ FALLBACK
-        # =================================================
-
-        if converted and groq:
-
-            fallback = groq_transcribe(
-                converted
-            )
-
-
-            if fallback:
-
-                return jsonify({
-
-                    "text":
-                    fallback,
-
-                    "provider":
-                    "groq-whisper-fallback"
-                })
-
-
-        return jsonify({
-
-            "error":
-            "Voice transcription failed."
-
-        }), 500
-
+                "provider":
+                    "Gemini"
+            }
+        )
 
     finally:
 
-        for file in (
-            original,
-            converted
-        ):
+        if temp_dir:
 
-            try:
-
-                if (
-                    file
-                    and os.path.exists(file)
-                ):
-
-                    os.remove(file)
-
-            except Exception:
-
-                pass
+            shutil.rmtree(
+                temp_dir,
+                ignore_errors=True
+            )
 
 
 # =========================================================
-# TEXT TO SPEECH - SARVAM
+# TTS
 # =========================================================
 
 @app.route(
@@ -1039,189 +1676,142 @@ def transcribe():
 )
 def tts():
 
-    if not SARVAM_API_KEY:
-
-        return jsonify({
-
-            "error":
-            "Sarvam API key not configured."
-
-        }), 503
-
-
-    data = request.get_json(
-        silent=True
-    ) or {}
-
-
-    text = str(
-        data.get(
-            "text",
-            ""
-        )
-    ).strip()
-
-
-    speaker = str(
-        data.get(
-            "speaker",
-            "shubh"
-        )
-    ).lower()
-
-
-    if not text:
-
-        return jsonify({
-            "error":
-            "No text."
-        }), 400
-
-
-    # =====================================================
-    # LANGUAGE
-    # =====================================================
-
-    if any(
-        "\u0980" <= c <= "\u09ff"
-        for c in text
-    ):
-
-        language = "bn-IN"
-
-    elif any(
-        "\u0900" <= c <= "\u097f"
-        for c in text
-    ):
-
-        language = "hi-IN"
-
-    else:
-
-        language = "en-IN"
-
-
-    # =====================================================
-    # VOICE CHECK
-    # =====================================================
-
-    if speaker not in (
-        MALE | FEMALE
-    ):
-
-        speaker = "shubh"
-
-
     try:
 
-        response = requests.post(
+        data = (
+            request.get_json(
+                silent=True
+            )
+            or {}
+        )
 
-            "https://api.sarvam.ai/text-to-speech",
+        text = str(
+            data.get(
+                "text",
+                ""
+            )
+        ).strip()
 
-            headers={
+        speaker = str(
+            data.get(
+                "speaker",
+                "shubh"
+            )
+        ).strip()
 
-                "api-subscription-key":
-                SARVAM_API_KEY,
+        if not text:
 
-                "Content-Type":
-                "application/json"
-            },
+            return jsonify(
+                {
+                    "audio":
+                        None,
 
-            json={
+                    "error":
+                        "Empty text"
+                }
+            ), 400
 
-                "text":
+        if speaker.lower() == "anushka":
+
+            speaker = "shubh"
+
+        audio_base64 = sarvam_tts(
+            text=
                 text,
 
-                "target_language_code":
-                language,
+            speaker=
+                speaker
+        )
+
+        return jsonify(
+            {
+                "audio":
+                    audio_base64,
 
                 "speaker":
-                speaker,
+                    speaker,
 
-                "model":
-                TTS_MODEL,
-
-                "enable_preprocessing":
-                True
-            },
-
-            timeout=60
+                "language":
+                    detect_language(
+                        text
+                    )
+            }
         )
-
-
-        if not response.ok:
-
-            print(
-                "SARVAM ERROR:",
-                response.text
-            )
-
-            return jsonify({
-
-                "error":
-                "TTS service failed."
-
-            }), response.status_code
-
-
-        result = response.json()
-
-
-        audios = result.get(
-            "audios",
-            []
-        )
-
-
-        if not audios:
-
-            return jsonify({
-
-                "error":
-                "No audio returned."
-
-            }), 500
-
-
-        audio = audios[0]
-
-
-        if not audio:
-
-            return jsonify({
-
-                "error":
-                "No audio returned."
-
-            }), 500
-
-
-        return jsonify({
-
-            "audio":
-            audio,
-
-            "language":
-            language,
-
-            "speaker":
-            speaker
-        })
-
 
     except Exception as e:
 
         print(
             "TTS ERROR:",
-            repr(e)
+            e
         )
 
-        return jsonify({
+        return jsonify(
+            {
+                "audio":
+                    None,
 
-            "error":
-            "Voice generation failed."
+                "error":
+                    str(e)
+            }
+        ), 500
 
-        }), 500
+
+# =========================================================
+# VOICES
+# =========================================================
+
+@app.route(
+    "/voices",
+    methods=["GET"]
+)
+def voices():
+
+    return jsonify(
+        {
+            "model":
+                TTS_MODEL,
+
+            "voices": [
+                "aditya",
+                "ritu",
+                "ashutosh",
+                "priya",
+                "neha",
+                "rahul",
+                "pooja",
+                "rohan",
+                "simran",
+                "kavya",
+                "amit",
+                "dev",
+                "ishita",
+                "shreya",
+                "ratan",
+                "varun",
+                "manan",
+                "sumit",
+                "roopa",
+                "kabir",
+                "aayan",
+                "shubh",
+                "advait",
+                "anand",
+                "tanya",
+                "tarun",
+                "sunny",
+                "mani",
+                "gokul",
+                "vijay",
+                "shruti",
+                "suhani",
+                "mohit",
+                "kavitha",
+                "rehan",
+                "soham",
+                "rupali"
+            ]
+        }
+    )
 
 
 # =========================================================
@@ -1234,128 +1824,350 @@ def tts():
 )
 def vision():
 
-    if not groq:
-
-        return jsonify({
-
-            "error":
-            "Groq is not configured."
-
-        }), 503
-
-
-    data = request.get_json(
-        silent=True
-    ) or {}
-
-
-    image = data.get(
-        "image"
-    )
-
-
-    question = str(
-        data.get(
-            "question",
-            "Describe this image."
-        )
-    )
-
-
-    if not image:
-
-        return jsonify({
-
-            "error":
-            "No image received."
-
-        }), 400
-
+    temp_file = None
 
     try:
 
-        response = (
-            groq.chat.completions.create(
-
-                model=VISION_MODEL,
-
-                messages=[
-
-                    {
-                        "role":
-                        "system",
-
-                        "content":
-                        SYSTEM
-                    },
-
-                    {
-                        "role":
-                        "user",
-
-                        "content": [
-
-                            {
-                                "type":
-                                "text",
-
-                                "text":
-                                question
-                            },
-
-                            {
-                                "type":
-                                "image_url",
-
-                                "image_url": {
-
-                                    "url":
-                                    image
-                                }
-                            }
-                        ]
-                    }
-                ],
-
-                temperature=0.5,
-
-                max_tokens=2048
-            )
+        image_file = request.files.get(
+            "image"
         )
 
+        question = ""
 
-        answer = str(
-            response
-            .choices[0]
-            .message
-            .content
-            or ""
-        ).strip()
+        if request.form:
 
+            question = str(
+                request.form.get(
+                    "question",
+                    "Describe this image."
+                )
+            ).strip()
 
-        return jsonify({
+        # -------------------------------------------------
+        # JSON BASE64 SUPPORT
+        # -------------------------------------------------
 
-            "answer":
-            answer,
+        if not image_file:
 
-            "provider":
-            "groq-vision"
-        })
+            data = (
+                request.get_json(
+                    silent=True
+                )
+                or {}
+            )
 
+            image_data = data.get(
+                "image"
+            )
+
+            question = str(
+                data.get(
+                    "question",
+                    "Describe this image."
+                )
+            ).strip()
+
+            if image_data:
+
+                if "," in image_data:
+
+                    image_data = (
+                        image_data.split(
+                            ",",
+                            1
+                        )[1]
+                    )
+
+                raw = base64.b64decode(
+                    image_data
+                )
+
+                temp_file = tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=".jpg"
+                )
+
+                temp_file.write(
+                    raw
+                )
+
+                temp_file.close()
+
+                image_path = (
+                    temp_file.name
+                )
+
+            else:
+
+                return jsonify(
+                    {
+                        "answer":
+                            DAILY_LIMIT_MESSAGE,
+
+                        "provider":
+                            "daily-limit"
+                    }
+                )
+
+        else:
+
+            temp_file = tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=".jpg"
+            )
+
+            image_file.save(
+                temp_file.name
+            )
+
+            temp_file.close()
+
+            image_path = (
+                temp_file.name
+            )
+
+        # -------------------------------------------------
+        # IMAGE BYTES
+        # -------------------------------------------------
+
+        with open(
+            image_path,
+            "rb"
+        ) as f:
+
+            image_bytes = f.read()
+
+        image_part = types.Part.from_bytes(
+            data=
+                image_bytes,
+
+            mime_type=
+                "image/jpeg"
+        )
+
+        vision_prompt = (
+            SYSTEM_PROMPT
+            +
+            "\n\nAnalyze this image carefully."
+            +
+            "\nAnswer the user's request."
+            +
+            "\n\nUser request:\n"
+            +
+            question
+        )
+
+        # =================================================
+        # GEMINI VISION
+        # =================================================
+
+        try:
+
+            if not gemini:
+
+                raise RuntimeError(
+                    "Gemini unavailable"
+                )
+
+            print(
+                "VISION MAIN: Gemini"
+            )
+
+            response = (
+                gemini.models.generate_content(
+                    model=
+                        GEMINI_VISION_MODEL,
+
+                    contents=[
+                        vision_prompt,
+                        image_part
+                    ],
+
+                    config=
+                        types.GenerateContentConfig(
+                            temperature=0.4
+                        )
+                )
+            )
+
+            answer = getattr(
+                response,
+                "text",
+                ""
+            )
+
+            answer = (
+                answer
+                or
+                ""
+            ).strip()
+
+            if not answer:
+
+                raise RuntimeError(
+                    "Gemini vision returned empty answer"
+                )
+
+            return jsonify(
+                {
+                    "answer":
+                        answer,
+
+                    "provider":
+                        "Gemini vision"
+                }
+            )
+
+        except Exception as gemini_error:
+
+            print(
+                "Gemini vision failed:",
+                gemini_error
+            )
+
+        # =================================================
+        # GROQ VISION FALLBACK
+        # =================================================
+
+        try:
+
+            if not groq:
+
+                raise RuntimeError(
+                    "Groq unavailable"
+                )
+
+            print(
+                "VISION FALLBACK: Groq"
+            )
+
+            encoded = base64.b64encode(
+                image_bytes
+            ).decode(
+                "utf-8"
+            )
+
+            response = (
+                groq.chat.completions.create(
+                    model=
+                        GROQ_VISION_MODEL,
+
+                    messages=[
+                        {
+                            "role":
+                                "system",
+
+                            "content":
+                                SYSTEM_PROMPT
+                        },
+
+                        {
+                            "role":
+                                "user",
+
+                            "content": [
+                                {
+                                    "type":
+                                        "text",
+
+                                    "text":
+                                        question
+                                },
+
+                                {
+                                    "type":
+                                        "image_url",
+
+                                    "image_url": {
+                                        "url":
+                                            "data:image/jpeg;base64,"
+                                            +
+                                            encoded
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+
+                    temperature=0.4
+                )
+            )
+
+            answer = (
+                response
+                .choices[0]
+                .message.content
+            )
+
+            answer = (
+                answer
+                or
+                ""
+            ).strip()
+
+            if not answer:
+
+                raise RuntimeError(
+                    "Groq vision returned empty answer"
+                )
+
+            return jsonify(
+                {
+                    "answer":
+                        answer,
+
+                    "provider":
+                        "Groq fallback vision"
+                }
+            )
+
+        except Exception as groq_error:
+
+            print(
+                "Groq vision failed:",
+                groq_error
+            )
+
+        return jsonify(
+            {
+                "answer":
+                    DAILY_LIMIT_MESSAGE,
+
+                "provider":
+                    "daily-limit"
+            }
+        )
 
     except Exception as e:
 
         print(
             "VISION ERROR:",
-            repr(e)
+            e
         )
 
-        return jsonify({
+        return jsonify(
+            {
+                "answer":
+                    DAILY_LIMIT_MESSAGE,
 
-            "error":
-            "Image processing failed."
+                "provider":
+                    "daily-limit"
+            }
+        )
 
-        }), 500
+    finally:
+
+        if temp_file:
+
+            try:
+
+                os.unlink(
+                    temp_file.name
+                )
+
+            except Exception:
+
+                pass
 
 
 # =========================================================
@@ -1368,118 +2180,97 @@ def vision():
 )
 def search():
 
-    if not tavily:
-
-        return jsonify({
-
-            "error":
-            "Tavily is not configured."
-
-        }), 503
-
-
-    data = request.get_json(
-        silent=True
-    ) or {}
-
-
-    query = str(
-        data.get(
-            "query",
-            ""
-        )
-    ).strip()
-
-
-    if not query:
-
-        return jsonify({
-
-            "error":
-            "No search query."
-
-        }), 400
-
-
     try:
 
-        result = tavily.search(
-
-            query=query,
-
-            search_depth="advanced",
-
-            max_results=5
+        data = (
+            request.get_json(
+                silent=True
+            )
+            or {}
         )
 
+        query = str(
+            data.get(
+                "query",
+                ""
+            )
+        ).strip()
+
+        if not query:
+
+            return jsonify(
+                {
+                    "results":
+                        []
+                }
+            )
+
+        results_text = tavily_search(
+            query
+        )
+
+        if not results_text:
+
+            return jsonify(
+                {
+                    "results":
+                        []
+                }
+            )
 
         return jsonify(
-            result
+            {
+                "results":
+                    results_text
+            }
         )
-
 
     except Exception as e:
 
         print(
             "SEARCH ERROR:",
-            repr(e)
+            e
         )
 
-        return jsonify({
-
-            "error":
-            "Search failed."
-
-        }), 500
+        return jsonify(
+            {
+                "results":
+                    []
+            }
+        )
 
 
 # =========================================================
-# HEALTH CHECK
+# HEALTH
 # =========================================================
 
 @app.route(
-    "/health"
+    "/health",
+    methods=["GET"]
 )
 def health():
 
-    return jsonify({
+    return jsonify(
+        {
+            "status":
+                "ok",
 
-        "status":
-        "ok",
+            "gemini":
+                bool(gemini),
 
-        "groq":
-        bool(GROQ_API_KEY),
+            "groq":
+                bool(groq),
 
-        "tavily":
-        bool(TAVILY_API_KEY),
+            "tavily":
+                bool(tavily_client),
 
-        "gemini":
-        bool(GEMINI_API_KEY),
+            "sarvam":
+                bool(SARVAM_API_KEY),
 
-        "gemini_transcribe":
-        bool(gemini),
-
-        "sarvam":
-        bool(SARVAM_API_KEY),
-
-        "chat_model":
-        CHAT_MODEL,
-
-        "vision_model":
-        VISION_MODEL,
-
-        "gemini_model":
-        GEMINI_MODEL,
-
-        "transcribe_model":
-        TRANSCRIBE_MODEL,
-
-        "groq_transcribe_model":
-        GROQ_TRANSCRIBE_MODEL,
-
-        "tts_model":
-        TTS_MODEL
-    })
+            "india_time":
+                get_india_time_text()
+        }
+    )
 
 
 # =========================================================
@@ -1489,35 +2280,30 @@ def health():
 if __name__ == "__main__":
 
     print(
-        "\n=============================="
+        "===================================="
     )
 
     print(
-        "      HELLO AI SERVER"
+        "HELLO AI SERVER STARTED"
     )
 
     print(
-        "=============================="
-    )
-
-    print(
-        "Groq:",
-        bool(GROQ_API_KEY)
-    )
-
-    print(
-        "Tavily:",
-        bool(TAVILY_API_KEY)
+        "===================================="
     )
 
     print(
         "Gemini:",
-        bool(GEMINI_API_KEY)
+        bool(gemini)
     )
 
     print(
-        "Gemini Transcribe:",
-        bool(gemini)
+        "Groq:",
+        bool(groq)
+    )
+
+    print(
+        "Tavily:",
+        bool(tavily_client)
     )
 
     print(
@@ -1526,40 +2312,11 @@ if __name__ == "__main__":
     )
 
     print(
-        "Chat Model:",
-        CHAT_MODEL
+        "===================================="
     )
-
-    print(
-        "Gemini Model:",
-        GEMINI_MODEL
-    )
-
-    print(
-        "Transcribe:",
-        TRANSCRIBE_MODEL
-    )
-
-    print(
-        "Groq Transcribe:",
-        GROQ_TRANSCRIBE_MODEL
-    )
-
-    print(
-        "TTS Model:",
-        TTS_MODEL
-    )
-
-    print(
-        "==============================\n"
-    )
-
 
     app.run(
-
         host="0.0.0.0",
-
         port=5000,
-
         debug=True
     )

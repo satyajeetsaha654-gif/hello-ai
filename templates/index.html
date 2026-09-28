@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
 <title>Hello AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
 
 <style>
 
@@ -15,32 +21,25 @@ content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,vie
     box-sizing:border-box;
 }
 
-html,body{
+html,
+body{
     margin:0;
     padding:0;
     width:100%;
     height:100%;
-    overflow:hidden;
     background:#000;
     color:#fff;
-    font-family:Arial,sans-serif;
-}
-
-button,input{
-    font:inherit;
-}
-
-button{
-    cursor:pointer;
+    font-family:Arial,Helvetica,sans-serif;
+    overflow:hidden;
 }
 
 #app{
     width:100%;
-    height:100dvh;
+    height:100%;
     display:flex;
     flex-direction:column;
-    background:#000;
 }
+
 
 /* =====================================================
    HEADER
@@ -48,14 +47,16 @@ button{
 
 header{
     height:58px;
-    flex:none;
+    min-height:58px;
     display:flex;
     align-items:center;
     justify-content:center;
     border-bottom:1px solid #222;
+    background:#000;
     font-size:20px;
-    font-weight:bold;
+    font-weight:600;
 }
+
 
 /* =====================================================
    CHAT
@@ -64,165 +65,185 @@ header{
 #chat{
     flex:1;
     overflow-y:auto;
-    padding:18px 12px 95px;
+    padding:18px 14px 120px;
     scroll-behavior:smooth;
 }
 
 .message{
-    max-width:85%;
-    margin:9px 0;
-    padding:11px 14px;
-    border-radius:17px;
-    line-height:1.45;
-    white-space:pre-wrap;
+    max-width:850px;
+    margin:0 auto 18px;
+    padding:13px 15px;
+    border-radius:18px;
+    line-height:1.55;
+    font-size:15px;
     word-wrap:break-word;
 }
 
-.message.user{
+.user{
+    background:#1f1f1f;
     margin-left:auto;
-    background:#252525;
-    border:1px solid #2878ff;
+    margin-right:0;
+    width:fit-content;
+    max-width:85%;
 }
 
-.message.ai{
-    margin-right:auto;
+.ai{
     background:#111;
-    border:1px solid #252525;
+    border:1px solid #202020;
+    margin-left:0;
+    margin-right:auto;
+    max-width:90%;
 }
 
-.ai-label{
-    font-size:12px;
-    font-weight:bold;
-    color:#aaa;
-    margin-bottom:6px;
-}
-
-.ai-content{
-    word-wrap:break-word;
-}
-
-.message img{
-    display:block;
-    max-width:100%;
-    max-height:300px;
-    border-radius:12px;
-}
-
-/* =====================================================
-   ACTION BUTTONS
-===================================================== */
-
-.actions{
-    display:flex;
-    gap:5px;
-    flex-wrap:wrap;
-    margin-top:8px;
-}
-
-.actions button{
-    background:#1d1d1d;
-    color:#ddd;
-    border:1px solid #333;
-    border-radius:9px;
-    padding:5px 8px;
-    font-size:12px;
-}
-
-.typing{
-    opacity:.75;
-}
 
 /* =====================================================
    MARKDOWN
 ===================================================== */
 
-.message.ai table{
-    width:100%;
-    border-collapse:collapse;
-    margin:10px 0;
-    font-size:14px;
+.ai h1,
+.ai h2,
+.ai h3{
+    margin-top:10px;
 }
 
-.message.ai th,
-.message.ai td{
-    border:1px solid #444;
-    padding:7px;
-    text-align:left;
-}
-
-.message.ai th{
-    background:#222;
-}
-
-.message.ai p{
+.ai p{
     margin:7px 0;
 }
 
-.message.ai ul,
-.message.ai ol{
+.ai ul,
+.ai ol{
     padding-left:22px;
 }
 
-.message.ai code{
+.ai li{
+    margin:5px 0;
+}
+
+.ai code{
     background:#222;
     padding:2px 5px;
     border-radius:5px;
 }
 
-.message.ai pre{
+.ai pre{
     background:#050505;
-    border:1px solid #333;
-    padding:10px;
-    border-radius:8px;
+    border:1px solid #282828;
+    padding:12px;
+    border-radius:10px;
     overflow-x:auto;
 }
+
+.ai table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+
+.ai th,
+.ai td{
+    border:1px solid #333;
+    padding:7px;
+    text-align:left;
+}
+
+
+/* =====================================================
+   AI ACTION BUTTONS
+===================================================== */
+
+.actions{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:4px;
+    margin-top:8px;
+    opacity:.72;
+}
+
+.actionBtn{
+    border:none;
+    background:transparent;
+    color:#888;
+    border-radius:7px;
+    padding:3px 5px;
+    font-size:11px;
+    line-height:1;
+    cursor:pointer;
+    transition:
+        background .15s ease,
+        color .15s ease;
+}
+
+.actionBtn:hover{
+    background:#1a1a1a;
+    color:#ccc;
+}
+
+.actionBtn:active{
+    background:#222;
+    color:#fff;
+}
+
 
 /* =====================================================
    BOTTOM BAR
 ===================================================== */
 
-#bottom{
+.bottom{
     position:fixed;
     left:0;
     right:0;
     bottom:0;
-    padding:10px 10px calc(10px + env(safe-area-inset-bottom));
-    background:#000;
-    border-top:1px solid #222;
-    display:flex;
-    gap:7px;
-    z-index:20;
+    padding:10px;
+    background:linear-gradient(
+        transparent,
+        #000 25%
+    );
 }
 
-#bottom input{
-    flex:1;
-    min-width:0;
-    background:#181818;
-    color:#fff;
+.inputBar{
+    max-width:850px;
+    margin:auto;
+    height:52px;
     border:1px solid #333;
-    border-radius:24px;
-    padding:12px 15px;
-    outline:none;
+    border-radius:18px;
+    background:#111;
+    display:flex;
+    align-items:center;
+    padding:5px 7px;
+    gap:7px;
 }
 
-#bottom input:focus{
-    border-color:#555;
-}
-
-#bottom button{
-    width:45px;
-    height:45px;
-    border:0;
-    border-radius:50%;
+.plusBtn,
+.sendBtn,
+.micBtn{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:12px;
     background:#202020;
     color:#fff;
-    font-size:19px;
+    cursor:pointer;
+    font-size:20px;
+    flex-shrink:0;
 }
 
-#send{
-    background:#fff!important;
-    color:#000!important;
+.plusBtn:hover,
+.sendBtn:hover,
+.micBtn:hover{
+    background:#2b2b2b;
 }
+
+#input{
+    flex:1;
+    min-width:0;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:#fff;
+    font-size:15px;
+}
+
 
 /* =====================================================
    PLUS MENU
@@ -230,178 +251,160 @@ header{
 
 #plusMenu{
     display:none;
-    position:fixed;
-    left:10px;
+    position:absolute;
     bottom:68px;
+    left:calc(50% - 425px);
+    width:180px;
     background:#151515;
     border:1px solid #333;
     border-radius:14px;
-    padding:8px;
-    z-index:30;
+    padding:7px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
 }
 
-#plusMenu button{
-    display:block;
-    width:150px;
-    background:#202020;
+.plusItem{
+    width:100%;
+    padding:11px;
+    background:transparent;
     color:#fff;
-    border:0;
-    border-radius:9px;
-    padding:10px;
-    margin:4px 0;
+    border:none;
     text-align:left;
+    border-radius:9px;
+    cursor:pointer;
+    font-size:14px;
 }
 
-input[type=file]{
+.plusItem:hover{
+    background:#252525;
+}
+
+
+/* =====================================================
+   HIDDEN INPUTS
+===================================================== */
+
+.hiddenInput{
     display:none;
 }
+
+
+/* =====================================================
+   IMAGE PREVIEW
+===================================================== */
+
+.previewImage{
+    max-width:100%;
+    max-height:350px;
+    border-radius:12px;
+    margin-top:8px;
+}
+
 
 /* =====================================================
    VOICE SCREEN
 ===================================================== */
 
-#voiceScreen{
+#voice{
     display:none;
     position:fixed;
     inset:0;
-    z-index:50;
     background:#000;
+    z-index:100;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:20px;
 }
 
-#closeVoice{
+.voiceClose{
     position:absolute;
-    right:18px;
     top:18px;
-    background:#222;
-    color:#fff;
-    border:0;
+    right:18px;
     width:42px;
     height:42px;
     border-radius:50%;
+    border:1px solid #333;
+    background:#151515;
+    color:#fff;
+    cursor:pointer;
     font-size:20px;
 }
 
 #orb{
-    width:145px;
-    height:145px;
+    width:130px;
+    height:130px;
     border-radius:50%;
-    background:radial-gradient(circle,#fff,#555,#111);
-    box-shadow:0 0 50px #555;
+    background:radial-gradient(
+        circle,
+        #fff 0%,
+        #777 30%,
+        #222 60%,
+        #000 100%
+    );
+    box-shadow:0 0 45px rgba(255,255,255,.25);
     animation:pulse 2s infinite;
-    margin-bottom:25px;
 }
 
 @keyframes pulse{
 
-    50%{
-        transform:scale(1.08);
-        box-shadow:0 0 80px #777;
+    0%{
+        transform:scale(1);
     }
 
+    50%{
+        transform:scale(1.08);
+    }
+
+    100%{
+        transform:scale(1);
+    }
 }
 
-#voiceStatus{
+#status{
+    margin-top:28px;
+    color:#bbb;
     font-size:15px;
-    opacity:.75;
-    margin:8px;
-    text-align:center;
 }
 
-#voiceProvider{
+#provider{
+    margin-top:7px;
+    color:#666;
     font-size:12px;
-    color:#777;
-    margin-top:2px;
-    text-align:center;
 }
 
-#voiceText{
-    width:100%;
-    max-width:92%;
-    max-height:calc(100dvh - 350px);
-    min-height:30px;
-    overflow-y:auto;
-    overflow-x:hidden;
-    text-align:left;
-    line-height:1.55;
-    padding:8px 10px 25px;
-    white-space:normal;
-    word-wrap:break-word;
-    scroll-behavior:smooth;
+.voiceText{
+    width:min(700px,90%);
+    min-height:70px;
+    margin-top:22px;
+    padding:12px;
+    border:1px solid #252525;
+    border-radius:12px;
+    background:#0d0d0d;
+    color:#fff;
+    resize:none;
+    outline:none;
 }
 
-#voiceText::-webkit-scrollbar{
-    width:5px;
-}
-
-#voiceText::-webkit-scrollbar-thumb{
-    background:#444;
-    border-radius:10px;
-}
-
-#voiceText table{
-    width:100%;
-    border-collapse:collapse;
-    margin:10px 0;
-    font-size:13px;
-}
-
-#voiceText th,
-#voiceText td{
-    border:1px solid #444;
-    padding:6px;
-    text-align:left;
-}
-
-#voiceText th{
-    background:#222;
-}
-
-#voiceText p{
-    margin:7px 0;
-}
-
-#voiceText ul,
-#voiceText ol{
-    padding-left:22px;
-}
-
-#voiceText code{
-    background:#222;
-    padding:2px 5px;
-    border-radius:5px;
-}
-
-#voiceText pre{
-    background:#050505;
-    border:1px solid #333;
-    padding:9px;
-    border-radius:8px;
-    overflow-x:auto;
-}
-
-/* =====================================================
-   VOICE CONTROLS
-===================================================== */
-
-.voice-controls{
+.voiceControls{
     display:flex;
-    gap:8px;
     flex-wrap:wrap;
     justify-content:center;
-    margin-top:20px;
+    gap:10px;
+    margin-top:18px;
 }
 
-.voice-controls button{
-    background:#202020;
-    color:#fff;
-    border:1px solid #333;
-    border-radius:12px;
+.voiceControl{
     padding:10px 15px;
+    border-radius:12px;
+    border:1px solid #333;
+    background:#151515;
+    color:#fff;
+    cursor:pointer;
 }
+
+#stopRecordBtn{
+    display:none;
+}
+
 
 /* =====================================================
    VOICE PICKER
@@ -411,156 +414,90 @@ input[type=file]{
     display:none;
     position:fixed;
     inset:0;
-    z-index:60;
-    background:#080808;
-    overflow-y:auto;
-    padding:65px 14px 30px;
-}
-
-#closePicker{
-    position:absolute;
-    right:15px;
-    top:15px;
-    background:#222;
-    color:#fff;
-    border:0;
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    font-size:20px;
-}
-
-.voice-title{
-    font-size:19px;
-    font-weight:bold;
-    margin:10px 0;
-}
-
-.voice-item{
-    display:flex;
+    z-index:200;
+    background:rgba(0,0,0,.88);
     align-items:center;
-    gap:7px;
-    padding:8px;
-    background:#151515;
-    border:1px solid #292929;
+    justify-content:center;
+    padding:20px;
+}
+
+.voiceBox{
+    width:min(600px,100%);
+    max-height:80vh;
+    overflow-y:auto;
+    background:#111;
+    border:1px solid #333;
+    border-radius:18px;
+    padding:18px;
+}
+
+.voiceBox h3{
+    margin-top:0;
+}
+
+.voiceSection{
+    margin-top:18px;
+}
+
+.voiceOption{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
     border-radius:10px;
-    margin:6px 0;
-}
-
-.voice-item.selected{
-    background:#fff;
-    color:#000;
-    border-color:#fff;
-}
-
-.voice-name{
-    flex:1;
-    font-size:14px;
-}
-
-.preview-btn,
-.select-btn{
-    background:#222;
+    border:1px solid #292929;
+    background:#171717;
     color:#fff;
-    border:1px solid #444;
-    border-radius:8px;
-    padding:7px 9px;
-    font-size:12px;
+    text-align:left;
+    cursor:pointer;
 }
 
-.voice-item.selected .preview-btn,
-.voice-item.selected .select-btn{
-    background:#000;
-    color:#fff;
-    border-color:#000;
+.voiceOption:hover{
+    background:#252525;
 }
 
-.preview-btn.loading{
-    opacity:.6;
-    pointer-events:none;
-}
 
 /* =====================================================
-   MOBILE
+   RESPONSIVE
 ===================================================== */
+
+@media(max-width:900px){
+
+    #plusMenu{
+        left:10px;
+    }
+
+}
 
 @media(max-width:600px){
 
     header{
         height:54px;
-        font-size:19px;
+        min-height:54px;
+        font-size:18px;
     }
 
     #chat{
-        padding:12px 8px 90px;
+        padding:14px 10px 115px;
     }
 
     .message{
-        max-width:91%;
-        font-size:15px;
+        font-size:14px;
     }
 
-    #bottom{
-        padding:8px;
+    .inputBar{
+        height:50px;
+        border-radius:16px;
     }
 
-    #bottom input{
-        font-size:15px;
+    .plusBtn,
+    .sendBtn,
+    .micBtn{
+        width:38px;
+        height:38px;
     }
 
-    #bottom button{
-        width:43px;
-        height:43px;
-    }
-
-    #orb{
-        width:125px;
-        height:125px;
-    }
-
-    .voice-item{
-        gap:5px;
-    }
-
-    .preview-btn,
-    .select-btn{
-        padding:7px 6px;
-    }
-
-    #voiceText{
-        max-height:calc(100dvh - 330px);
-    }
-
-}
-
-@media(max-width:380px){
-
-    .voice-name{
-        font-size:12px;
-    }
-
-    .preview-btn,
-    .select-btn{
-        font-size:11px;
-    }
-
-    #bottom button{
-        width:40px;
-        height:40px;
-    }
-
-}
-
-@media(max-height:500px) and (orientation:landscape){
-
-    #orb{
-        width:85px;
-        height:85px;
-        margin-bottom:10px;
-    }
-
-    #voiceText{
-        max-height:calc(100dvh - 210px);
+    #input{
+        font-size:14px;
     }
 
 }
@@ -569,47 +506,88 @@ input[type=file]{
 
 </head>
 
+
 <body>
+
 
 <div id="app">
 
-<header>Hello AI</header>
+
+<header>
+    Hello AI
+</header>
+
 
 <div id="chat"></div>
 
 
 <!-- =====================================================
-     BOTTOM BAR
+     BOTTOM INPUT
 ===================================================== -->
 
-<div id="bottom">
+<div class="bottom">
 
-    <button onclick="togglePlus()">+</button>
+    <div id="plusMenu">
 
-    <input
-        id="messageInput"
+        <button
+        class="plusItem"
+        onclick="openCamera()">
+            📷 Camera
+        </button>
+
+        <button
+        class="plusItem"
+        onclick="openGallery()">
+            🖼️ Gallery
+        </button>
+
+        <button
+        class="plusItem"
+        onclick="openDocument()">
+            📄 Document
+        </button>
+
+        <button
+        class="plusItem"
+        onclick="createImage()">
+            🎨 Create Image
+        </button>
+
+    </div>
+
+
+    <div class="inputBar">
+
+        <button
+        class="plusBtn"
+        onclick="togglePlus()">
+            +
+        </button>
+
+
+        <input
+        id="input"
+        type="text"
         placeholder="Ask Hello AI anything..."
-        onkeydown="if(event.key==='Enter')send()"
-    >
-
-    <button id="send" onclick="send()">➤</button>
-
-    <button onclick="openVoice()">🎤</button>
-
-</div>
+        autocomplete="off"
+        onkeydown="handleEnter(event)"
+        />
 
 
-<!-- =====================================================
-     PLUS MENU
-===================================================== -->
+        <button
+        class="sendBtn"
+        onclick="send()">
+            ➤
+        </button>
 
-<div id="plusMenu">
 
-    <button onclick="camera()">📷 Camera</button>
+        <button
+        class="micBtn"
+        onclick="openVoice()">
+            🎤
+        </button>
 
-    <button onclick="gallery()">🖼️ Gallery</button>
-
-    <button onclick="documentFile()">📄 Document</button>
+    </div>
 
 </div>
 
@@ -620,6 +598,7 @@ input[type=file]{
 
 <input
     id="cameraInput"
+    class="hiddenInput"
     type="file"
     accept="image/*"
     capture="environment"
@@ -628,6 +607,7 @@ input[type=file]{
 
 <input
     id="galleryInput"
+    class="hiddenInput"
     type="file"
     accept="image/*"
     onchange="imageFile(this)"
@@ -635,7 +615,9 @@ input[type=file]{
 
 <input
     id="documentInput"
+    class="hiddenInput"
     type="file"
+    accept=".pdf,.txt,.doc,.docx"
     onchange="docFile(this)"
 >
 
@@ -644,31 +626,61 @@ input[type=file]{
      VOICE SCREEN
 ===================================================== -->
 
-<div id="voiceScreen">
+<div id="voice">
 
-    <button id="closeVoice" onclick="closeVoice()">✕</button>
+    <button
+    class="voiceClose"
+    onclick="closeVoice()">
+        ×
+    </button>
+
 
     <div id="orb"></div>
 
-    <div id="voiceStatus">
-        Press Speak to talk
+
+    <div id="status">
+        Ready
     </div>
 
-    <div id="voiceProvider"></div>
 
-    <div id="voiceText"></div>
+    <div id="provider"></div>
 
-    <div class="voice-controls">
 
-        <button id="voiceMic" onclick="recordToggle()">
-            🎙️ Speak
+    <textarea
+    id="voiceText"
+    class="voiceText"
+    readonly
+    placeholder="Voice transcription will appear here..."
+    ></textarea>
+
+
+    <div class="voiceControls">
+
+        <button
+        class="voiceControl"
+        id="stopRecordBtn"
+        onclick="stopRecording()">
+            🔴 Stop Recording
         </button>
 
-        <button id="muteButton" onclick="mute()">
+
+        <button
+        class="voiceControl"
+        onclick="speakCurrent()">
+            🔊 Speak
+        </button>
+
+
+        <button
+        class="voiceControl"
+        onclick="toggleMute()">
             🔇 Mute
         </button>
 
-        <button onclick="openPicker()">
+
+        <button
+        class="voiceControl"
+        onclick="openVoicePicker()">
             🎙️ Voice
         </button>
 
@@ -683,31 +695,51 @@ input[type=file]{
 
 <div id="voicePicker">
 
-    <button id="closePicker" onclick="closePicker()">✕</button>
+    <div class="voiceBox">
 
-    <div class="voice-title">
-        Male Voices
+        <h3>
+            Choose Voice
+        </h3>
+
+
+        <div class="voiceSection">
+
+            <strong>
+                Male Voices
+            </strong>
+
+            <div id="maleVoices"></div>
+
+        </div>
+
+
+        <div class="voiceSection">
+
+            <strong>
+                Female Voices
+            </strong>
+
+            <div id="femaleVoices"></div>
+
+        </div>
+
+
+        <button
+        class="voiceControl"
+        onclick="closeVoicePicker()">
+            Close
+        </button>
+
     </div>
-
-    <div id="maleVoices"></div>
-
-    <div class="voice-title">
-        Female Voices
-    </div>
-
-    <div id="femaleVoices"></div>
 
 </div>
 
+
 </div>
-
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 
 
 <script>
+
 
 /* =====================================================
    STATE
@@ -716,17 +748,55 @@ input[type=file]{
 let history = [];
 
 let selectedVoice =
-    localStorage.getItem("helloAI_voice") || "shubh";
+    localStorage.getItem("hello_ai_voice")
+    || "shubh";
 
 let recorder = null;
 let chunks = [];
 let stream = null;
-
 let recording = false;
 let muted = false;
-
 let audioNow = null;
+
+let recordingTimer = null;
+
 let lastQuestion = "";
+let lastAnswer = "";
+
+let plusOpen = false;
+
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const chat =
+    document.getElementById("chat");
+
+const input =
+    document.getElementById("input");
+
+
+/* =====================================================
+   BASIC HELPERS
+===================================================== */
+
+function escapeHTML(text){
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
+
+function scrollChat(){
+
+    chat.scrollTop =
+        chat.scrollHeight;
+}
 
 
 /* =====================================================
@@ -735,23 +805,18 @@ let lastQuestion = "";
 
 function renderAIText(text){
 
-    if(window.marked && window.DOMPurify){
+    try{
 
-        marked.setOptions({
-            breaks:true,
-            gfm:true
-        });
+        const html =
+            marked.parse(text || "");
 
-        return DOMPurify.sanitize(
-            marked.parse(String(text))
-        );
+        return DOMPurify.sanitize(html);
+
+    }catch(e){
+
+        return escapeHTML(text || "");
+
     }
-
-    return String(text)
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/\n/g,"<br>");
 }
 
 
@@ -759,27 +824,22 @@ function renderAIText(text){
    NORMAL MESSAGE
 ===================================================== */
 
-function msg(text,type){
+function msg(text,type="user"){
 
-    let d = document.createElement("div");
+    const div =
+        document.createElement("div");
 
-    d.className = "message " + type;
+    div.className =
+        "message " + type;
 
-    d.textContent = text;
+    div.textContent =
+        text;
 
-    document.getElementById("chat").appendChild(d);
+    chat.appendChild(div);
 
     scrollChat();
 
-    return d;
-}
-
-
-function scrollChat(){
-
-    let c = document.getElementById("chat");
-
-    c.scrollTop = c.scrollHeight;
+    return div;
 }
 
 
@@ -787,188 +847,170 @@ function scrollChat(){
    AI MESSAGE
 ===================================================== */
 
-async function addAIMessage(text){
+function addAIMessage(
+    text,
+    provider="gemini",
+    animate=true
+){
 
-    let box = document.createElement("div");
+    const div =
+        document.createElement("div");
 
-    box.className = "message ai";
+    div.className =
+        "message ai";
 
+    const content =
+        document.createElement("div");
 
-    let label = document.createElement("div");
+    div.appendChild(content);
 
-    label.className = "ai-label";
-
-    label.textContent = "Hello AI";
-
-
-    let content = document.createElement("div");
-
-    content.className = "ai-content typing";
-
-
-    let actions = document.createElement("div");
-
-    actions.className = "actions";
-
-    actions.innerHTML = `
-
-        <button onclick="copyText(this)">
-            Copy
-        </button>
-
-        <button onclick="this.textContent='👍'">
-            Like
-        </button>
-
-        <button onclick="this.textContent='👎'">
-            Dislike
-        </button>
-
-        <button onclick="speak(this.parentElement.parentElement.querySelector('.ai-content').textContent)">
-            🔊 Speak
-        </button>
-
-        <button onclick="regenerate()">
-            ↻ Regenerate
-        </button>
-
-        <button onclick="share(this.parentElement.parentElement.querySelector('.ai-content').textContent)">
-            Share
-        </button>
-
-    `;
-
-
-    box.append(
-        label,
-        content,
-        actions
-    );
-
-    document.getElementById("chat").appendChild(box);
+    chat.appendChild(div);
 
     scrollChat();
 
 
-    let full = String(text);
+    if(!animate){
 
+        content.innerHTML =
+            renderAIText(text);
 
-    for(let i=0;i<full.length;i+=3){
-
-        content.textContent =
-            full.slice(0,i+3);
-
-        scrollChat();
-
-        await new Promise(
-            resolve => setTimeout(resolve,12)
+        addActions(
+            div,
+            text
         );
+
+        return div;
     }
 
 
-    content.classList.remove("typing");
+    let index = 0;
 
-    content.innerHTML =
-        renderAIText(full);
+    const timer =
+        setInterval(() => {
 
-    scrollChat();
+            if(index >= text.length){
+
+                clearInterval(timer);
+
+                content.innerHTML =
+                    renderAIText(text);
+
+                addActions(
+                    div,
+                    text
+                );
+
+                scrollChat();
+
+                return;
+            }
+
+
+            content.textContent =
+                text.substring(
+                    0,
+                    index + 1
+                );
+
+            index += 2;
+
+            scrollChat();
+
+        },12);
+
+
+    return div;
 }
 
 
 /* =====================================================
-   SEND TEXT
+   AI ACTION BUTTONS
 ===================================================== */
 
-async function send(){
+function addActions(
+    container,
+    text
+){
 
-    let input =
-        document.getElementById("messageInput");
+    const actions =
+        document.createElement("div");
 
-    let q =
-        input.value.trim();
-
-    if(!q)return;
-
-    input.value = "";
-
-    lastQuestion = q;
-
-    msg(q,"user");
+    actions.className =
+        "actions";
 
 
-    let loading =
-        msg("Thinking...","ai");
-
-
-    try{
-
-        let r =
-            await fetch("/ask",{
-
-                method:"POST",
-
-                headers:{
-                    "Content-Type":"application/json"
-                },
-
-                body:JSON.stringify({
-                    question:q,
-                    history:history
-                })
-
-            });
-
-
-        let d =
-            await r.json();
-
-
-        loading.remove();
-
-
-        if(!r.ok){
-
-            msg(
-                d.error || "Something went wrong.",
-                "ai"
-            );
-
-            return;
-        }
-
-
-        let answer =
-            d.answer ||
-            d.response ||
-            "";
-
-
-        history.push(
-            {
-                role:"user",
-                content:q
-            },
-            {
-                role:"assistant",
-                content:answer
-            }
+    const copy =
+        createAction(
+            "Copy",
+            () => copyText(text)
         );
 
 
-        await addAIMessage(answer);
-
-
-    }catch(e){
-
-        console.error("ASK ERROR:",e);
-
-        loading.remove();
-
-        msg(
-            "Connection error.",
-            "ai"
+    const like =
+        createAction(
+            "Like",
+            () => likeMessage(like)
         );
-    }
+
+
+    const dislike =
+        createAction(
+            "Dislike",
+            () => dislikeMessage(dislike)
+        );
+
+
+    const speakButton =
+        createAction(
+            "Speak",
+            () => speak(text)
+        );
+
+
+    const regenerate =
+        createAction(
+            "Regenerate",
+            () => regenerateAnswer()
+        );
+
+
+    const share =
+        createAction(
+            "Share",
+            () => shareText(text)
+        );
+
+
+    actions.appendChild(copy);
+    actions.appendChild(like);
+    actions.appendChild(dislike);
+    actions.appendChild(speakButton);
+    actions.appendChild(regenerate);
+    actions.appendChild(share);
+
+
+    container.appendChild(actions);
+}
+
+
+function createAction(
+    text,
+    callback
+){
+
+    const button =
+        document.createElement("button");
+
+    button.className =
+        "actionBtn";
+
+    button.textContent =
+        text;
+
+    button.onclick =
+        callback;
+
+    return button;
 }
 
 
@@ -976,178 +1018,132 @@ async function send(){
    COPY
 ===================================================== */
 
-function copyText(btn){
-
-    let text =
-        btn.parentElement
-        .parentElement
-        .querySelector(".ai-content")
-        .textContent;
-
-    navigator.clipboard.writeText(text);
-
-    btn.textContent = "Copied";
-
-
-    setTimeout(()=>{
-
-        btn.textContent = "Copy";
-
-    },1200);
-}
-
-
-/* =====================================================
-   TEXT TO SPEECH
-===================================================== */
-
-async function speak(text){
+async function copyText(text){
 
     try{
 
-        let r =
-            await fetch("/tts",{
-
-                method:"POST",
-
-                headers:{
-                    "Content-Type":"application/json"
-                },
-
-                body:JSON.stringify({
-                    text:text,
-                    speaker:selectedVoice
-                })
-
-            });
-
-
-        let d =
-            await r.json();
-
-
-        if(!r.ok || !d.audio){
-
-            console.error("TTS ERROR:",d);
-
-            return;
-        }
-
-
-        if(audioNow){
-
-            audioNow.pause();
-
-            audioNow.currentTime = 0;
-        }
-
-
-        audioNow =
-            new Audio(
-                "data:audio/wav;base64," + d.audio
-            );
-
-
-        await audioNow.play();
-
+        await navigator.clipboard.writeText(text);
 
     }catch(e){
 
-        console.error(
-            "TTS ERROR:",
-            e
-        );
+        const area =
+            document.createElement("textarea");
+
+        area.value =
+            text;
+
+        document.body.appendChild(area);
+
+        area.select();
+
+        document.execCommand("copy");
+
+        area.remove();
     }
 }
 
 
 /* =====================================================
-   SHARE
+   LIKE / DISLIKE
 ===================================================== */
 
-async function share(text){
+function likeMessage(button){
 
-    try{
+    button.textContent =
+        "Liked";
+}
 
-        if(navigator.share){
 
-            await navigator.share({
+function dislikeMessage(button){
 
-                title:"Hello AI",
-
-                text:text
-
-            });
-
-        }else{
-
-            await navigator.clipboard.writeText(text);
-
-            alert("Answer copied.");
-
-        }
-
-    }catch(e){}
+    button.textContent =
+        "Noted";
 }
 
 
 /* =====================================================
-   REGENERATE
+   SEND
 ===================================================== */
 
-async function regenerate(){
+async function send(){
 
-    if(!lastQuestion)return;
+    const q =
+        input.value.trim();
+
+    if(!q)
+        return;
 
 
-    let loading =
-        msg("Regenerating...","ai");
+    lastQuestion =
+        q;
+
+    input.value = "";
+
+    closePlus();
+
+
+    msg(
+        q,
+        "user"
+    );
+
+
+    const thinking =
+        msg(
+            "Thinking...",
+            "ai"
+        );
 
 
     try{
 
-        let r =
-            await fetch("/ask",{
+        const response =
+            await fetch(
+                "/ask",
+                {
+                    method:"POST",
 
-                method:"POST",
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                headers:{
-                    "Content-Type":"application/json"
-                },
+                    body:JSON.stringify({
 
-                body:JSON.stringify({
+                        question:q,
 
-                    question:lastQuestion,
+                        history:history
 
-                    history:history
-
-                })
-
-            });
-
-
-        let d =
-            await r.json();
-
-
-        loading.remove();
-
-
-        if(!r.ok){
-
-            msg(
-                d.error || "Failed.",
-                "ai"
+                    })
+                }
             );
 
-            return;
-        }
+
+        const data =
+            await response.json();
 
 
-        let answer =
-            d.answer ||
-            d.response ||
-            "";
+        thinking.remove();
+
+
+        const answer =
+            data.answer
+            || data.response
+            || data.error
+            || "Sorry, I couldn't answer that.";
+
+
+        lastAnswer =
+            answer;
+
+
+        history.push({
+
+            role:"user",
+
+            content:q
+
+        });
 
 
         history.push({
@@ -1159,20 +1155,274 @@ async function regenerate(){
         });
 
 
-        await addAIMessage(answer);
+        if(history.length > 30){
+
+            history =
+                history.slice(-30);
+
+        }
+
+
+        addAIMessage(
+            answer,
+            data.provider
+            || data.model
+            || "gemini"
+        );
+
+
+    }catch(error){
+
+        console.log(
+            "Send error:",
+            error
+        );
+
+
+        thinking.remove();
+
+
+        addAIMessage(
+            "Something went wrong. Please try again.",
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
+   ENTER KEY
+===================================================== */
+
+function handleEnter(event){
+
+    if(event.key === "Enter"){
+
+        event.preventDefault();
+
+        send();
+    }
+}
+
+
+/* =====================================================
+   REGENERATE
+===================================================== */
+
+async function regenerateAnswer(){
+
+    if(!lastQuestion)
+        return;
+
+
+    const thinking =
+        msg(
+            "Regenerating...",
+            "ai"
+        );
+
+
+    try{
+
+        const response =
+            await fetch(
+                "/ask",
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        question:lastQuestion,
+
+                        history:history
+
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        thinking.remove();
+
+
+        const answer =
+            data.answer
+            || data.response
+            || data.error
+            || "Sorry, I couldn't answer that.";
+
+
+        lastAnswer =
+            answer;
+
+
+        history.push({
+
+            role:"assistant",
+
+            content:answer
+
+        });
+
+
+        if(history.length > 30){
+
+            history =
+                history.slice(-30);
+
+        }
+
+
+        addAIMessage(
+            answer,
+            data.provider
+            || data.model
+            || "gemini"
+        );
 
 
     }catch(e){
 
-        console.error(e);
+        thinking.remove();
 
-        loading.remove();
 
-        msg(
-            "Connection error.",
-            "ai"
+        addAIMessage(
+            "Unable to regenerate the answer.",
+            "error"
         );
     }
+}
+
+
+/* =====================================================
+   SHARE
+===================================================== */
+
+async function shareText(text){
+
+    try{
+
+        if(navigator.share){
+
+            await navigator.share({
+                title:"Hello AI",
+                text:text
+            });
+
+        }else{
+
+            await navigator.clipboard.writeText(
+                text
+            );
+
+            alert(
+                "Answer copied to clipboard."
+            );
+
+        }
+
+    }catch(e){
+
+        console.log(e);
+    }
+}
+
+
+/* =====================================================
+   SPEAK
+===================================================== */
+
+async function speak(text){
+
+    if(!text)
+        return;
+
+
+    if(audioNow){
+
+        try{
+
+            audioNow.pause();
+
+        }catch(e){}
+
+        audioNow = null;
+    }
+
+
+    try{
+
+        const response =
+            await fetch(
+                "/tts",
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        text:text,
+
+                        speaker:selectedVoice
+
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if(!data.audio){
+
+            return;
+        }
+
+
+        audioNow =
+            new Audio(
+                "data:audio/wav;base64,"
+                + data.audio
+            );
+
+
+        if(!muted){
+
+            await audioNow.play();
+
+        }
+
+    }catch(e){
+
+        console.log(
+            "TTS error:",
+            e
+        );
+    }
+}
+
+
+function speakCurrent(){
+
+    if(lastAnswer){
+
+        speak(lastAnswer);
+
+    }
+
 }
 
 
@@ -1182,21 +1432,39 @@ async function regenerate(){
 
 function togglePlus(){
 
-    let m =
-        document.getElementById("plusMenu");
+    plusOpen =
+        !plusOpen;
 
-    m.style.display =
-        m.style.display === "block"
-        ? "none"
-        : "block";
-}
-
-
-function camera(){
 
     document.getElementById(
         "plusMenu"
-    ).style.display = "none";
+    ).style.display =
+        plusOpen
+        ? "block"
+        : "none";
+}
+
+
+function closePlus(){
+
+    plusOpen = false;
+
+
+    document.getElementById(
+        "plusMenu"
+    ).style.display =
+        "none";
+}
+
+
+/* =====================================================
+   CAMERA
+===================================================== */
+
+function openCamera(){
+
+    closePlus();
+
 
     document.getElementById(
         "cameraInput"
@@ -1204,11 +1472,14 @@ function camera(){
 }
 
 
-function gallery(){
+/* =====================================================
+   GALLERY
+===================================================== */
 
-    document.getElementById(
-        "plusMenu"
-    ).style.display = "none";
+function openGallery(){
+
+    closePlus();
+
 
     document.getElementById(
         "galleryInput"
@@ -1216,11 +1487,14 @@ function gallery(){
 }
 
 
-function documentFile(){
+/* =====================================================
+   DOCUMENT
+===================================================== */
 
-    document.getElementById(
-        "plusMenu"
-    ).style.display = "none";
+function openDocument(){
+
+    closePlus();
+
 
     document.getElementById(
         "documentInput"
@@ -1229,270 +1503,239 @@ function documentFile(){
 
 
 /* =====================================================
-   IMAGE
+   CREATE IMAGE
 ===================================================== */
 
-async function imageFile(input){
+function createImage(){
 
-    let file =
-        input.files && input.files[0];
-
-    if(!file)return;
+    closePlus();
 
 
     msg(
-        "🖼️ " + file.name,
-        "user"
+        "Create Image is available in the existing interface.",
+        "ai"
     );
+}
 
 
-    let reader =
+/* =====================================================
+   IMAGE FILE
+===================================================== */
+
+function imageFile(inputElement){
+
+    const file =
+        inputElement.files[0];
+
+    if(!file)
+        return;
+
+
+    const reader =
         new FileReader();
 
 
-    reader.onload = async function(){
+    reader.onload =
+        async function(){
 
-        let dataUrl =
-            reader.result;
-
-
-        let imgBox =
-            document.createElement("div");
-
-        imgBox.className =
-            "message user";
+            const dataURL =
+                reader.result;
 
 
-        let img =
-            document.createElement("img");
+            const image =
+                document.createElement("img");
 
-        img.src = dataUrl;
+            image.src =
+                dataURL;
 
-
-        imgBox.appendChild(img);
-
-        document.getElementById(
-            "chat"
-        ).appendChild(imgBox);
-
-        scrollChat();
+            image.className =
+                "previewImage";
 
 
-        let loading =
-            msg(
-                "Image বুঝছি...",
-                "ai"
+            const userBox =
+                document.createElement("div");
+
+            userBox.className =
+                "message user";
+
+            userBox.appendChild(
+                image
             );
 
 
-        try{
+            chat.appendChild(
+                userBox
+            );
 
-            let r =
-                await fetch("/vision",{
 
-                    method:"POST",
+            scrollChat();
 
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
 
-                    body:JSON.stringify({
+            const thinking =
+                msg(
+                    "Analyzing image...",
+                    "ai"
+                );
 
-                        image:dataUrl,
 
-                        question:
-                            "এই ছবিটা দেখে বলো এখানে কী আছে।"
+            try{
 
-                    })
+                const response =
+                    await fetch(
+                        "/vision",
+                        {
+                            method:"POST",
+
+                            headers:{
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:JSON.stringify({
+
+                                image:dataURL,
+
+                                question:
+                                    "এই ছবিটা দেখে বলো এখানে কী আছে। বিস্তারিতভাবে এবং সঠিকভাবে উত্তর দাও।"
+
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                thinking.remove();
+
+
+                const answer =
+                    data.answer
+                    || data.response
+                    || data.error
+                    || "I couldn't analyze this image.";
+
+
+                history.push({
+
+                    role:"user",
+
+                    content:
+                        "[Image uploaded]"
 
                 });
 
 
-            let d =
-                await r.json();
+                history.push({
+
+                    role:"assistant",
+
+                    content:answer
+
+                });
 
 
-            loading.remove();
+                if(history.length > 30){
+
+                    history =
+                        history.slice(-30);
+
+                }
 
 
-            if(!r.ok){
-
-                msg(
-                    d.error ||
-                    "Image analysis failed.",
-                    "ai"
+                addAIMessage(
+                    answer,
+                    data.provider
+                    || data.model
+                    || "gemini-vision"
                 );
 
-                return;
+
+            }catch(e){
+
+                thinking.remove();
+
+
+                addAIMessage(
+                    "I couldn't analyze the image right now.",
+                    "error"
+                );
             }
-
-
-            await addAIMessage(
-                d.answer ||
-                d.response ||
-                "Image বুঝতে পারিনি."
-            );
-
-
-        }catch(e){
-
-            console.error(
-                "VISION ERROR:",
-                e
-            );
-
-            loading.remove();
-
-            msg(
-                "Image analysis failed.",
-                "ai"
-            );
-        }
-
-    };
+        };
 
 
     reader.readAsDataURL(file);
 
-    input.value = "";
+    inputElement.value = "";
 }
 
 
 /* =====================================================
-   DOCUMENT
+   DOCUMENT FILE
 ===================================================== */
 
-function docFile(input){
+function docFile(inputElement){
 
-    let file =
-        input.files && input.files[0];
+    const file =
+        inputElement.files[0];
 
-    if(!file)return;
-
-
-    msg(
-        "📄 " + file.name,
-        "user"
-    );
+    if(!file)
+        return;
 
 
     msg(
         "Document selected: " + file.name,
-        "ai"
+        "user"
     );
 
 
-    input.value = "";
+    addAIMessage(
+        "The document was selected. Document processing is not enabled in the current backend yet.",
+        "system"
+    );
+
+
+    inputElement.value = "";
 }
 
 
 /* =====================================================
-   OPEN VOICE
+   VOICE
 ===================================================== */
 
-function openVoice(){
+async function openVoice(){
+
+    if(recording){
+        return;
+    }
+
 
     document.getElementById(
-        "voiceScreen"
-    ).style.display = "flex";
+        "voice"
+    ).style.display =
+        "flex";
 
 
     document.getElementById(
-        "voiceStatus"
+        "status"
     ).textContent =
-        "Press Speak to talk";
+        "Starting microphone...";
 
 
     document.getElementById(
-        "voiceProvider"
-    ).textContent = "";
-
-
-    let box =
-        document.getElementById(
-            "voiceText"
-        );
-
-    box.innerHTML = "";
-
-    box.dataset.userText = "";
-}
-
-
-/* =====================================================
-   CLOSE VOICE
-===================================================== */
-
-function closeVoice(){
-
-    if(recording){
-
-        stopRecording();
-    }
-
-
-    if(audioNow){
-
-        audioNow.pause();
-
-        audioNow.currentTime = 0;
-    }
+        "provider"
+    ).textContent =
+        "";
 
 
     document.getElementById(
-        "voiceScreen"
-    ).style.display = "none";
-}
+        "voiceText"
+    ).value =
+        "";
 
-
-/* =====================================================
-   RECORD TOGGLE
-===================================================== */
-
-function recordToggle(){
-
-    if(recording){
-
-        stopRecording();
-
-    }else{
-
-        startRecording();
-    }
-}
-
-
-/* =====================================================
-   START RECORDING
-===================================================== */
-
-async function startRecording(){
 
     try{
-
-        if(muted){
-
-            document.getElementById(
-                "voiceStatus"
-            ).textContent =
-                "Microphone is muted.";
-
-            return;
-        }
-
-
-        if(
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
-        ){
-
-            alert(
-                "এই browser-এ microphone support নেই।"
-            );
-
-            return;
-        }
-
 
         stream =
             await navigator.mediaDevices.getUserMedia({
@@ -1506,75 +1749,192 @@ async function startRecording(){
             });
 
 
-        recorder =
-            new MediaRecorder(stream);
-
-
-        chunks = [];
-
-
-        recorder.ondataavailable =
-            function(e){
-
-                if(
-                    e.data &&
-                    e.data.size > 0
-                ){
-
-                    chunks.push(e.data);
-                }
-            };
-
-
-        recorder.onerror =
-            function(e){
-
-                console.error(
-                    "RECORDER ERROR:",
-                    e
-                );
-            };
-
-
-        recorder.onstop =
-            sendVoice;
-
-
-        recorder.start();
-
-
-        recording = true;
-
-
-        document.getElementById(
-            "voiceMic"
-        ).textContent =
-            "⏹️ Stop";
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Listening...";
-
-
-        document.getElementById(
-            "voiceProvider"
-        ).textContent = "";
-
+        startRecording();
 
     }catch(e){
 
-        console.error(
-            "MIC ERROR:",
+        console.log(
+            "Microphone error:",
             e
         );
 
 
-        alert(
-            "Microphone permission দিন এবং আবার চেষ্টা করুন."
-        );
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Microphone permission is required.";
     }
+}
+
+
+function closeVoice(){
+
+    stopRecording();
+
+
+    if(stream){
+
+        stream.getTracks().forEach(
+            track => track.stop()
+        );
+
+        stream = null;
+    }
+
+
+    if(audioNow){
+
+        try{
+
+            audioNow.pause();
+
+        }catch(e){}
+
+        audioNow = null;
+    }
+
+
+    document.getElementById(
+        "stopRecordBtn"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "voice"
+    ).style.display =
+        "none";
+}
+
+
+/* =====================================================
+   RECORDING
+===================================================== */
+
+function startRecording(){
+
+    if(!stream)
+        return;
+
+
+    if(recording)
+        return;
+
+
+    chunks = [];
+
+
+    try{
+
+        recorder =
+            new MediaRecorder(stream);
+
+    }catch(e){
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Audio recording is not supported.";
+
+        return;
+    }
+
+
+    recorder.ondataavailable =
+        event => {
+
+            if(
+                event.data &&
+                event.data.size > 0
+            ){
+
+                chunks.push(
+                    event.data
+                );
+
+            }
+
+        };
+
+
+    recorder.onstop =
+        async () => {
+
+            const recordedChunks =
+                chunks.slice();
+
+            chunks = [];
+
+
+            if(recordedChunks.length === 0){
+
+                document.getElementById(
+                    "status"
+                ).textContent =
+                    "No audio recorded.";
+
+                return;
+            }
+
+
+            const blob =
+                new Blob(
+                    recordedChunks,
+                    {
+                        type:
+                            recorder.mimeType
+                            || "audio/webm"
+                    }
+                );
+
+
+            await sendAudio(blob);
+        };
+
+
+    recorder.start();
+
+    recording = true;
+
+
+    document.getElementById(
+        "status"
+    ).textContent =
+        "Listening...";
+
+
+    document.getElementById(
+        "provider"
+    ).textContent =
+        "Speak now, then press Stop Recording";
+
+
+    document.getElementById(
+        "stopRecordBtn"
+    ).style.display =
+        "block";
+
+
+    if(recordingTimer){
+
+        clearTimeout(
+            recordingTimer
+        );
+
+        recordingTimer = null;
+    }
+
+
+    recordingTimer =
+        setTimeout(() => {
+
+            if(recording){
+
+                stopRecording();
+
+            }
+
+        },60000);
 }
 
 
@@ -1584,260 +1944,117 @@ async function startRecording(){
 
 function stopRecording(){
 
-    if(!recorder){
+    if(!recorder || !recording){
 
         return;
-    }
-
-
-    if(
-        recorder.state !== "inactive"
-    ){
-
-        recorder.stop();
-    }
-
-
-    if(stream){
-
-        stream
-            .getTracks()
-            .forEach(
-                t => t.stop()
-            );
-
-        stream = null;
     }
 
 
     recording = false;
 
 
-    document.getElementById(
-        "voiceMic"
-    ).textContent =
-        "🎙️ Speak";
+    if(recordingTimer){
+
+        clearTimeout(
+            recordingTimer
+        );
+
+        recordingTimer = null;
+    }
 
 
     document.getElementById(
-        "voiceStatus"
+        "stopRecordBtn"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "status"
     ).textContent =
-        "Gemini is transcribing...";
-}
-
-
-/* =====================================================
-   SEND VOICE
-===================================================== */
-
-async function sendVoice(){
-
-    let controller = null;
-
-    let timeout = null;
+        "Processing...";
 
 
     try{
 
-        let mime =
-            recorder && recorder.mimeType
-            ? recorder.mimeType
-            : "audio/webm";
+        recorder.stop();
 
-
-        let blob =
-            new Blob(
-                chunks,
-                {
-                    type:mime
-                }
-            );
-
+    }catch(e){
 
         console.log(
-            "VOICE AUDIO SIZE:",
-            blob.size
+            "Recorder stop error:",
+            e
         );
+    }
+}
 
 
-        console.log(
-            "VOICE MIME:",
-            mime
-        );
+/* =====================================================
+   SEND AUDIO
+===================================================== */
 
+async function sendAudio(blob){
 
-        if(blob.size < 1000){
+    try{
 
-            throw new Error(
-                "Audio recording is too small."
-            );
-        }
-
-
-        let form =
+        const formData =
             new FormData();
 
 
-        form.append(
+        formData.append(
             "audio",
             blob,
             "voice.webm"
         );
 
 
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Gemini is transcribing...";
-
-
-        document.getElementById(
-            "voiceProvider"
-        ).textContent =
-            "Automatic language detection";
-
-
-        console.log(
-            "SENDING AUDIO TO /transcribe..."
-        );
-
-
-        /* =================================================
-           60 SECOND TIMEOUT
-        ================================================= */
-
-
-        controller =
-            new AbortController();
-
-
-        timeout =
-            setTimeout(
-                ()=>{
-                    controller.abort();
-                },
-                60000
-            );
-
-
-        /* =================================================
-           SEND AUDIO
-        ================================================= */
-
-
-        let r =
+        const response =
             await fetch(
                 "/transcribe",
                 {
                     method:"POST",
-                    body:form,
-                    signal:controller.signal
+                    body:formData
                 }
             );
 
 
-        clearTimeout(timeout);
-
-        timeout = null;
-
-
-        console.log(
-            "TRANSCRIBE RESPONSE:",
-            r.status
-        );
+        const data =
+            await response.json();
 
 
-        let d =
-            await r.json();
+        if(!data.text){
 
-
-        console.log(
-            "TRANSCRIBE DATA:",
-            d
-        );
-
-
-        if(!r.ok){
-
-            throw new Error(
-                d.error ||
-                "Transcription failed"
-            );
-        }
-
-
-        let text =
-            String(
-                d.text ||
-                d.transcript ||
-                ""
-            ).trim();
-
-
-        console.log(
-            "FINAL TRANSCRIPT:",
-            text
-        );
-
-
-        if(!text){
-
-            throw new Error(
-                "No speech detected."
-            );
-        }
-
-
-        /* =================================================
-           SHOW USER SPEECH
-        ================================================= */
-
-
-        let voiceBox =
             document.getElementById(
-                "voiceText"
-            );
+                "status"
+            ).textContent =
+                data.error
+                || "No speech detected.";
 
 
-        voiceBox.dataset.userText =
-            "<b>You:</b><br>" +
-            escapeHTML(text);
+            document.getElementById(
+                "provider"
+            ).textContent =
+                "";
 
 
-        voiceBox.innerHTML =
-            voiceBox.dataset.userText;
+            return;
+        }
 
 
-        voiceBox.scrollTop =
-            voiceBox.scrollHeight;
-
-
-        /* =================================================
-           SHOW PROVIDER
-        ================================================= */
+        const text =
+            data.text.trim();
 
 
         document.getElementById(
-            "voiceProvider"
+            "voiceText"
+        ).value =
+            text;
+
+
+        document.getElementById(
+            "provider"
         ).textContent =
-            d.provider ||
-            "Gemini Transcribe";
-
-
-        /* =================================================
-           NORMAL CHAT
-        ================================================= */
-
-
-        msg(
-            "🎤 " + text,
-            "user"
-        );
-
-
-        /* =================================================
-           SEND TO AI
-        ================================================= */
+            "Gemini transcription";
 
 
         await voiceAsk(text);
@@ -1845,124 +2062,23 @@ async function sendVoice(){
 
     }catch(e){
 
-        console.error(
-            "VOICE ERROR:",
+        console.log(
+            "Voice processing error:",
             e
         );
 
 
-        if(
-            e.name === "AbortError"
-        ){
-
-            document.getElementById(
-                "voiceStatus"
-            ).textContent =
-                "Transcription timed out. Please try again.";
-
-        }else{
-
-            document.getElementById(
-                "voiceStatus"
-            ).textContent =
-                e.message ||
-                "Voice processing failed.";
-        }
-
-
         document.getElementById(
-            "voiceProvider"
-        ).textContent = "";
-
-
-    }finally{
-
-        if(timeout){
-
-            clearTimeout(timeout);
-
-        }
-
+            "status"
+        ).textContent =
+            "Voice processing failed.";
     }
-}
-
-
-/* =====================================================
-   VOICE ANSWER TYPING
-===================================================== */
-
-async function typeVoiceAnswer(text){
-
-    let box =
-        document.getElementById(
-            "voiceText"
-        );
-
-
-    let userText =
-        box.dataset.userText || "";
-
-
-    let full =
-        String(text);
-
-
-    let current = "";
-
-
-    box.innerHTML =
-        userText +
-        "<br><br>" +
-        "<b>Hello AI:</b><br>";
-
-
-    box.scrollTop =
-        box.scrollHeight;
-
-
-    for(
-        let i=0;
-        i<full.length;
-        i+=3
-    ){
-
-        current +=
-            full.slice(i,i+3);
-
-
-        box.innerHTML =
-            userText +
-            "<br><br>" +
-            "<b>Hello AI:</b><br>" +
-            escapeHTML(current)
-                .replace(/\n/g,"<br>");
-
-
-        box.scrollTop =
-            box.scrollHeight;
-
-
-        await new Promise(
-            resolve =>
-                setTimeout(resolve,12)
-        );
-    }
-
-
-    box.innerHTML =
-        userText +
-        "<br><br>" +
-        "<b>Hello AI:</b><br>" +
-        renderAIText(full);
-
-
-    box.scrollTop =
-        box.scrollHeight;
 }
 
 
 /* =====================================================
    VOICE ASK
+   GEMINI ONLY
 ===================================================== */
 
 async function voiceAsk(text){
@@ -1970,122 +2086,119 @@ async function voiceAsk(text){
     try{
 
         document.getElementById(
-            "voiceStatus"
+            "status"
         ).textContent =
-            "Hello AI is thinking...";
+            "Thinking...";
 
 
-        let r =
+        const response =
             await fetch(
                 "/ask",
                 {
-
                     method:"POST",
 
                     headers:{
                         "Content-Type":
-                        "application/json"
+                            "application/json"
                     },
 
                     body:JSON.stringify({
 
                         question:text,
 
-                        history:history
+                        history:history,
+
+                        voice_mode:true
 
                     })
-
                 }
             );
 
 
-        let d =
-            await r.json();
+        const data =
+            await response.json();
 
 
-        if(!r.ok){
+        const answer =
+            data.answer
+            || data.response
+            || data.error
+            || "Sorry, I couldn't answer that.";
 
-            throw new Error(
-                d.error ||
-                "AI failed"
-            );
+
+        lastQuestion =
+            text;
+
+
+        lastAnswer =
+            answer;
+
+
+        history.push({
+
+            role:"user",
+
+            content:text
+
+        });
+
+
+        history.push({
+
+            role:"assistant",
+
+            content:answer
+
+        });
+
+
+        if(history.length > 30){
+
+            history =
+                history.slice(-30);
+
         }
 
 
-        let answer =
-            d.answer ||
-            d.response ||
-            "";
-
-
-        /* SAVE HISTORY */
-
-        history.push(
-            {
-                role:"user",
-                content:text
-            },
-            {
-                role:"assistant",
-                content:answer
-            }
-        );
-
-
-        lastQuestion = text;
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Gemini answer";
 
 
         document.getElementById(
-            "voiceStatus"
+            "provider"
         ).textContent =
-            "Hello AI is answering...";
+            "Gemini";
 
 
-        await typeVoiceAnswer(
-            answer
+        addAIMessage(
+            answer,
+            data.provider
+            || data.model
+            || "gemini"
         );
 
 
-        /* NORMAL CHAT */
+        if(!muted){
 
-        await addAIMessage(
-            answer
-        );
+            await speak(answer);
 
-
-        /* SPEAK ANSWER */
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Speaking...";
-
-
-        await speak(
-            answer
-        );
-
-
-        /* READY */
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Press Speak to talk";
+        }
 
 
     }catch(e){
 
-        console.error(
-            "VOICE ASK ERROR:",
+        console.log(
+            "Voice AI error:",
             e
         );
 
 
         document.getElementById(
-            "voiceStatus"
+            "status"
         ).textContent =
-            "AI response failed.";
+            "Unable to get an AI answer.";
     }
 }
 
@@ -2094,39 +2207,22 @@ async function voiceAsk(text){
    MUTE
 ===================================================== */
 
-function mute(){
+function toggleMute(){
 
-    muted = !muted;
+    muted =
+        !muted;
 
 
-    let b =
+    const status =
         document.getElementById(
-            "muteButton"
+            "status"
         );
 
 
-    if(muted){
-
-        b.textContent =
-            "🎤 Unmute";
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Microphone muted.";
-
-    }else{
-
-        b.textContent =
-            "🔇 Mute";
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Microphone ready.";
-    }
+    status.textContent =
+        muted
+        ? "Voice muted"
+        : "Voice enabled";
 }
 
 
@@ -2134,19 +2230,16 @@ function mute(){
    VOICE PICKER
 ===================================================== */
 
-function openPicker(){
+function openVoicePicker(){
 
     document.getElementById(
         "voicePicker"
     ).style.display =
-        "block";
-
-
-    loadVoices();
+        "flex";
 }
 
 
-function closePicker(){
+function closeVoicePicker(){
 
     document.getElementById(
         "voicePicker"
@@ -2155,15 +2248,68 @@ function closePicker(){
 }
 
 
+/* =====================================================
+   VOICE LIST
+===================================================== */
+
+const maleVoices = [
+
+    "shubh",
+    "aditya",
+    "rahul",
+    "rohan",
+    "amit",
+    "dev",
+    "ratan",
+    "varun",
+    "manan",
+    "sumit",
+    "kabir",
+    "aayan",
+    "ashutosh",
+    "advait",
+    "anand",
+    "tarun",
+    "sunny",
+    "mani",
+    "gokul",
+    "vijay",
+    "mohit",
+    "rehan",
+    "soham"
+
+];
+
+
+const femaleVoices = [
+
+    "ritu",
+    "priya",
+    "neha",
+    "pooja",
+    "simran",
+    "kavya",
+    "ishita",
+    "shreya",
+    "roopa",
+    "tanya",
+    "shruti",
+    "suhani",
+    "kavitha",
+    "rupali"
+
+];
+
+
 function loadVoices(){
 
-    let male =
+    const male =
         document.getElementById(
             "maleVoices"
         );
 
 
-    let female =
+    const female =
         document.getElementById(
             "femaleVoices"
         );
@@ -2174,321 +2320,133 @@ function loadVoices(){
     female.innerHTML = "";
 
 
-    [
-        "shubh",
-        "aditya",
-        "rahul",
-        "rohan",
-        "amit",
-        "dev",
-        "ratan",
-        "varun",
-        "manan",
-        "sumit",
-        "kabir",
-        "aayan"
-    ].forEach(
-        v =>
-            createVoice(v,male)
+    maleVoices.forEach(
+        voice => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "voiceOption";
+
+
+            button.textContent =
+                voice;
+
+
+            button.onclick =
+                () => selectVoice(voice);
+
+
+            male.appendChild(
+                button
+            );
+        }
     );
 
 
-    [
-        "ritu",
-        "priya",
-        "neha",
-        "pooja",
-        "simran",
-        "kavya",
-        "ishita",
-        "shreya",
-        "roopa",
-        "tanya",
-        "shruti",
-        "suhani"
-    ].forEach(
-        v =>
-            createVoice(v,female)
+    femaleVoices.forEach(
+        voice => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "voiceOption";
+
+
+            button.textContent =
+                voice;
+
+
+            button.onclick =
+                () => selectVoice(voice);
+
+
+            female.appendChild(
+                button
+            );
+        }
+    );
+}
+
+
+function selectVoice(voice){
+
+    selectedVoice =
+        voice;
+
+
+    localStorage.setItem(
+        "hello_ai_voice",
+        voice
+    );
+
+
+    closeVoicePicker();
+
+
+    speak(
+        "Hello, I am Hello AI."
     );
 }
 
 
 /* =====================================================
-   CREATE VOICE
+   INITIAL LOAD
 ===================================================== */
 
-function createVoice(name,parent){
-
-    let row =
-        document.createElement(
-            "div"
-        );
-
-
-    row.className =
-        "voice-item" +
-        (
-            selectedVoice === name
-            ? " selected"
-            : ""
-        );
-
-
-    row.innerHTML = `
-
-        <span class="voice-name">
-            ${escapeHTML(name)}
-        </span>
-
-        <button class="preview-btn">
-            ▶ Preview
-        </button>
-
-        <button class="select-btn">
-            ${
-                selectedVoice === name
-                ? "✓ Selected"
-                : "Select"
-            }
-        </button>
-
-    `;
-
-
-    row.querySelector(
-        ".preview-btn"
-    ).onclick = e => {
-
-        e.preventDefault();
-
-        e.stopPropagation();
-
-        previewVoice(
-            name,
-            e.currentTarget
-        );
-    };
-
-
-    row.querySelector(
-        ".select-btn"
-    ).onclick = e => {
-
-        e.preventDefault();
-
-        e.stopPropagation();
-
-
-        selectedVoice = name;
-
-
-        localStorage.setItem(
-            "helloAI_voice",
-            selectedVoice
-        );
-
+window.addEventListener(
+    "load",
+    () => {
 
         loadVoices();
-    };
 
-
-    parent.appendChild(row);
-}
-
-
-/* =====================================================
-   VOICE PREVIEW
-===================================================== */
-
-async function previewVoice(
-    name,
-    button
-){
-
-    try{
-
-        if(button){
-
-            button.classList.add(
-                "loading"
-            );
-
-            button.textContent =
-                "⏳ Loading...";
-        }
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Loading " +
-            name +
-            " voice...";
-
-
-        if(audioNow){
-
-            audioNow.pause();
-
-            audioNow.currentTime = 0;
-        }
-
-
-        let r =
-            await fetch(
-                "/tts",
-                {
-
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":
-                        "application/json"
-                    },
-
-                    body:JSON.stringify({
-
-                        text:
-                            "Hello, I am your AI voice. Nice to meet you.",
-
-                        speaker:name
-
-                    })
-
-                }
-            );
-
-
-        let d =
-            await r.json();
-
-
-        if(!r.ok){
-
-            console.error(
-                "VOICE PREVIEW ERROR:",
-                d
-            );
-
-            throw new Error(
-                d.error ||
-                "Voice preview failed"
-            );
-        }
-
-
-        if(!d.audio){
-
-            throw new Error(
-                "No audio returned"
-            );
-        }
-
-
-        audioNow =
-            new Audio(
-                "data:audio/wav;base64," +
-                d.audio
-            );
-
-
-        audioNow.onended = () => {
-
-            document.getElementById(
-                "voiceStatus"
-            ).textContent =
-                "Press Speak to talk";
-        };
-
-
-        await audioNow.play();
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Playing " +
-            name +
-            "...";
-
-
-    }catch(e){
-
-        console.error(
-            "VOICE PREVIEW ERROR:",
-            e
-        );
-
-
-        document.getElementById(
-            "voiceStatus"
-        ).textContent =
-            "Voice preview failed.";
-
-
-        alert(
-            name +
-            " voice preview failed. Check the TTS connection."
-        );
-
-
-    }finally{
-
-        if(button){
-
-            button.classList.remove(
-                "loading"
-            );
-
-            button.textContent =
-                "▶ Preview";
-        }
     }
-}
+);
 
 
 /* =====================================================
-   ESCAPE HTML
+   CLOSE PLUS WHEN CLICKING OUTSIDE
 ===================================================== */
 
-function escapeHTML(text){
+document.addEventListener(
+    "click",
+    function(event){
 
-    return String(text)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
+        const menu =
+            document.getElementById(
+                "plusMenu"
+            );
 
 
-/* =====================================================
-   START
-===================================================== */
+        const button =
+            document.querySelector(
+                ".plusBtn"
+            );
 
-loadVoices();
+
+        if(
+            plusOpen &&
+            !menu.contains(event.target) &&
+            !button.contains(event.target)
+        ){
+
+            closePlus();
+
+        }
+
+    }
+);
 
 </script>
 
 </body>
+
 </html>
