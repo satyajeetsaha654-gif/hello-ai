@@ -9,10 +9,8 @@
 
 <title>Hello AI</title>
 
-<!-- Markdown -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-<!-- DOMPurify -->
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
 <style>
@@ -50,20 +48,12 @@ textarea{
     outline:none;
 }
 
-/* =========================
-   APP
-========================= */
-
 #app{
     width:100%;
     height:100%;
     position:relative;
     background:#000;
 }
-
-/* =========================
-   HEADER
-========================= */
 
 .header{
     position:fixed;
@@ -72,10 +62,7 @@ textarea{
     right:0;
     height:62px;
     background:rgba(0,0,0,.94);
-
-    /* Gray line removed */
     border-bottom:none;
-
     display:flex;
     align-items:center;
     z-index:100;
@@ -105,10 +92,6 @@ textarea{
     letter-spacing:.2px;
 }
 
-/* =========================
-   CHAT AREA
-========================= */
-
 #chat{
     position:absolute;
     top:62px;
@@ -128,10 +111,6 @@ textarea{
     background:#333;
 }
 
-/* =========================
-   WELCOME
-========================= */
-
 #welcome{
     height:100%;
     display:flex;
@@ -142,154 +121,74 @@ textarea{
     padding:25px;
 }
 
-/* Animated Hello Logo */
+/* ===== HELLO AI WELCOME LOGO ===== */
 
 .welcome-logo{
-    width:88px;
-    height:88px;
+    width:92px;
+    height:92px;
     border-radius:50%;
-
     position:relative;
 
     display:flex;
-    justify-content:center;
     align-items:center;
+    justify-content:center;
 
-    font-size:20px;
-    font-weight:700;
-    letter-spacing:.3px;
-
-    color:#fff;
-
-    background:
-        radial-gradient(
-            circle at 35% 30%,
-            #ffffff 0%,
-            #bde9ff 8%,
-            #39bfff 22%,
-            #176dff 48%,
-            #4320d8 72%,
-            #0b0820 100%
-        );
+    background:#050505;
+    border:2px solid #f2f2f2;
 
     box-shadow:
-        0 0 18px rgba(0,180,255,.55),
-        0 0 40px rgba(65,80,255,.35),
-        0 0 70px rgba(150,40,255,.22);
+        0 0 0 1px #151515,
+        0 0 18px rgba(255,255,255,.12),
+        inset 0 0 20px rgba(255,255,255,.04);
 
-    margin-bottom:20px;
+    margin-bottom:0;
 
     animation:
         helloLogoFloat 3s ease-in-out infinite;
 }
 
-
-/* Colorful animated ring */
-
 .welcome-logo::before{
     content:"";
-
     position:absolute;
-
-    inset:-7px;
-
+    inset:-6px;
     border-radius:50%;
 
-    background:
-        conic-gradient(
-            from 0deg,
-            #00eaff,
-            #1478ff,
-            #7c3cff,
-            #ff35c7,
-            #ff9d00,
-            #fff000,
-            #20e68a,
-            #00eaff
-        );
+    border:1px solid rgba(255,255,255,.55);
 
-    z-index:-1;
+    box-shadow:
+        0 0 0 1px rgba(0,0,0,.8);
 
-    animation:
-        helloLogoRotate 4s linear infinite;
-
-    filter:blur(2px);
-
-    opacity:.95;
+    pointer-events:none;
 }
-
-
-/* Outer glow / animated star-like rays */
 
 .welcome-logo::after{
     content:"";
-
     position:absolute;
-
-    inset:-15px;
-
+    inset:8px;
     border-radius:50%;
 
-    background:
-        conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            rgba(0,234,255,.8) 12deg,
-            transparent 25deg,
-            rgba(124,60,255,.75) 55deg,
-            transparent 75deg,
-            rgba(255,53,199,.8) 105deg,
-            transparent 125deg,
-            rgba(255,157,0,.8) 160deg,
-            transparent 180deg,
-            rgba(32,230,138,.8) 215deg,
-            transparent 240deg,
-            rgba(20,120,255,.8) 280deg,
-            transparent 310deg,
-            rgba(0,234,255,.8) 345deg,
-            transparent 360deg
-        );
+    border:1px solid rgba(255,255,255,.13);
 
-    z-index:-2;
-
-    animation:
-        helloStarRotate 6s linear infinite;
-
-    filter:blur(5px);
-
-    opacity:.65;
+    pointer-events:none;
 }
 
+.welcome-logo-symbol{
+    width:58px;
+    height:58px;
 
-@keyframes helloLogoRotate{
+    position:relative;
+    z-index:5;
 
-    from{
-        transform:rotate(0deg);
-    }
-
-    to{
-        transform:rotate(360deg);
-    }
-
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
-
-@keyframes helloStarRotate{
-
-    from{
-        transform:rotate(360deg) scale(1);
-    }
-
-    50%{
-        transform:rotate(180deg) scale(1.05);
-    }
-
-    to{
-        transform:rotate(0deg) scale(1);
-    }
-
+.welcome-logo-symbol svg{
+    width:56px;
+    height:56px;
+    display:block;
 }
-
 
 @keyframes helloLogoFloat{
 
@@ -299,16 +198,25 @@ textarea{
     }
 
     50%{
-        transform:translateY(-5px);
+        transform:translateY(-3px);
     }
 
 }
 
+.welcome-logo-name{
+    margin-top:14px;
+
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.5px;
+
+    color:#fff;
+    line-height:1;
+
+}
 
 .welcome-title{
-    font-size:27px;
-    font-weight:600;
-    margin-bottom:9px;
+    display:none;
 }
 
 .welcome-text{
@@ -316,11 +224,11 @@ textarea{
     font-size:14px;
     max-width:300px;
     line-height:1.6;
+
+    margin-top:11px;
 }
 
-/* =========================
-   MESSAGE
-========================= */
+/* ===== END WELCOME LOGO ===== */
 
 .message-row{
     width:100%;
@@ -357,10 +265,6 @@ textarea{
 .ai-bubble{
     color:#f3f3f3;
 }
-
-/* =========================
-   CLEAN AI TEXT
-========================= */
 
 .ai-bubble p{
     margin:0 0 12px;
@@ -430,10 +334,6 @@ textarea{
     margin:14px 0;
 }
 
-/* =========================
-   AI ACTIONS
-========================= */
-
 .ai-actions{
     display:flex;
     align-items:center;
@@ -459,10 +359,6 @@ textarea{
 .action-btn:active{
     background:#222;
 }
-
-/* =========================
-   TYPING
-========================= */
 
 .typing{
     display:flex;
@@ -498,10 +394,6 @@ textarea{
         transform:translateY(-4px);
     }
 }
-
-/* =========================
-   BOTTOM INPUT
-========================= */
 
 .bottom-area{
     position:fixed;
@@ -569,10 +461,6 @@ textarea{
     color:#777;
 }
 
-/* =========================
-   DYNAMIC ACTION BUTTON
-========================= */
-
 #mainAction{
     width:44px;
     height:44px;
@@ -594,8 +482,6 @@ textarea{
 #mainAction:active{
     transform:scale(.92);
 }
-
-/* waveform */
 
 .wave-icon{
     width:22px;
@@ -633,14 +519,10 @@ textarea{
     height:6px;
 }
 
-/* send */
-
 .send-icon{
     font-size:19px;
     transform:translateX(1px);
 }
-
-/* processing */
 
 #mainAction.processing{
     width:46px;
@@ -681,10 +563,6 @@ textarea{
     }
 }
 
-/* =========================
-   PLUS MENU
-========================= */
-
 #plusMenu{
     position:fixed;
     left:14px;
@@ -720,10 +598,6 @@ textarea{
     width:24px;
     text-align:center;
 }
-
-/* =========================
-   HISTORY DRAWER
-========================= */
 
 #historyOverlay{
     position:fixed;
@@ -810,10 +684,6 @@ textarea{
     font-size:13px;
     padding:8px;
 }
-
-/* =========================
-   VOICE AGENT
-========================= */
 
 #voiceScreen{
     position:fixed;
@@ -931,10 +801,12 @@ textarea{
         transform:scale(.92);
         opacity:.7;
     }
+
     70%{
         transform:scale(1.08);
         opacity:0;
     }
+
     100%{
         transform:scale(1.08);
         opacity:0;
@@ -980,6 +852,7 @@ textarea{
     0%,100%{
         transform:scaleY(.5);
     }
+
     50%{
         transform:scaleY(1.7);
     }
@@ -1030,10 +903,6 @@ textarea{
     color:#777;
 }
 
-/* =========================
-   VOICE TEXT BOX
-========================= */
-
 .voice-input-area{
     position:absolute;
     left:15px;
@@ -1051,17 +920,9 @@ textarea{
     color:#fff;
 }
 
-/* =========================
-   HIDDEN INPUTS
-========================= */
-
 .hidden-input{
     display:none;
 }
-
-/* =========================
-   TOAST
-========================= */
 
 #toast{
     position:fixed;
@@ -1083,10 +944,6 @@ textarea{
     opacity:1;
     transform:translateX(-50%) translateY(0);
 }
-
-/* =========================
-   MOBILE
-========================= */
 
 @media(max-width:600px){
 
@@ -1110,7 +967,6 @@ textarea{
     .welcome-logo{
         width:82px;
         height:82px;
-        font-size:19px;
     }
 
 }
@@ -1122,293 +978,327 @@ textarea{
 
 <div id="app">
 
-    <!-- HEADER -->
-    <header class="header">
+<header class="header">
+
+    <button
+        class="menu-btn"
+        id="historyBtn"
+        aria-label="Chat history">
+        ☰
+    </button>
+
+    <div class="logo-title">
+        Hello AI
+    </div>
+
+</header>
+
+<main id="chat">
+
+    <div id="welcome">
+
+        <div class="welcome-logo">
+
+            <div class="welcome-logo-symbol">
+
+                <svg
+                    viewBox="0 0 100 100"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Hello AI logo">
+
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="43"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="3"/>
+
+                    <path
+                        d="M50 17
+                           C39 17 32 24 32 35
+                           C32 42 36 47 42 50
+                           C36 53 32 58 32 65
+                           C32 76 39 83 50 83
+                           C61 83 68 76 68 65
+                           C68 58 64 53 58 50
+                           C64 47 68 42 68 35
+                           C68 24 61 17 50 17Z"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"/>
+
+                    <path
+                        d="M25 50
+                           C25 39 33 32 44 32
+                           C50 32 55 35 59 40
+                           C63 35 68 32 75 32"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"/>
+
+                    <path
+                        d="M25 50
+                           C25 61 33 68 44 68
+                           C50 68 55 65 59 60
+                           C63 65 68 68 75 68"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"/>
+
+                </svg>
+
+            </div>
+
+        </div>
+
+        <div class="welcome-logo-name">
+            Hello Ai
+        </div>
+
+        <div class="welcome-text">
+            Ask anything, anyway. I’m ready.
+        </div>
+
+    </div>
+
+</main>
+
+<div class="bottom-area">
+
+    <div class="input-box">
 
         <button
-            class="menu-btn"
-            id="historyBtn"
-            aria-label="Chat history">
-            ☰
+            class="plus-btn"
+            id="plusBtn">
+            +
         </button>
 
-        <div class="logo-title">
-            Hello AI
-        </div>
+        <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Ask Hello AI anything..."
+            autocomplete="off"></textarea>
 
-    </header>
+        <button
+            id="mainAction"
+            aria-label="Voice">
 
+            <div class="wave-icon">
 
-    <!-- CHAT -->
-    <main id="chat">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
 
-        <div id="welcome">
-
-            <div class="welcome-logo">
-                Hello
             </div>
 
-            <div class="welcome-title">
-                Hello AI
-            </div>
-
-            <div class="welcome-text">
-                Ask anything. Anyway, I'm ready.
-            </div>
-
-        </div>
-
-    </main>
-
-
-    <!-- BOTTOM INPUT -->
-    <div class="bottom-area">
-
-        <div class="input-box">
-
-            <button
-                class="plus-btn"
-                id="plusBtn">
-                +
-            </button>
-
-            <textarea
-                id="messageInput"
-                rows="1"
-                placeholder="Ask Hello AI anything..."
-                autocomplete="off"></textarea>
-
-            <button
-                id="mainAction"
-                aria-label="Voice">
-
-                <div class="wave-icon">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- PLUS MENU -->
-    <div id="plusMenu">
-
-        <button class="plus-item" id="cameraBtn">
-            <span class="plus-icon">📷</span>
-            Camera
-        </button>
-
-        <button class="plus-item" id="galleryBtn">
-            <span class="plus-icon">🖼️</span>
-            Gallery
-        </button>
-
-        <button class="plus-item" id="documentBtn">
-            <span class="plus-icon">📄</span>
-            Document
-        </button>
-
-        <button class="plus-item" id="imageBtn">
-            <span class="plus-icon">✨</span>
-            Create Image
         </button>
 
     </div>
 
+</div>
 
-    <!-- FILE INPUTS -->
+<div id="plusMenu">
 
-    <input
-        id="cameraInput"
-        class="hidden-input"
-        type="file"
-        accept="image/*"
-        capture="environment">
+    <button class="plus-item" id="cameraBtn">
+        <span class="plus-icon">📷</span>
+        Camera
+    </button>
 
-    <input
-        id="galleryInput"
-        class="hidden-input"
-        type="file"
-        accept="image/*">
+    <button class="plus-item" id="galleryBtn">
+        <span class="plus-icon">🖼️</span>
+        Gallery
+    </button>
 
-    <input
-        id="documentInput"
-        class="hidden-input"
-        type="file"
-        accept=".pdf,.txt,.doc,.docx,image/*">
+    <button class="plus-item" id="documentBtn">
+        <span class="plus-icon">📄</span>
+        Document
+    </button>
 
+    <button class="plus-item" id="imageBtn">
+        <span class="plus-icon">✨</span>
+        Create Image
+    </button>
 
-    <!-- HISTORY -->
-    <div id="historyOverlay">
+</div>
 
-        <aside id="historyDrawer">
+<input
+    id="cameraInput"
+    class="hidden-input"
+    type="file"
+    accept="image/*"
+    capture="environment">
 
-            <div class="history-header">
+<input
+    id="galleryInput"
+    class="hidden-input"
+    type="file"
+    accept="image/*">
 
-                <div class="history-logo">
-                    Hello AI
-                </div>
+<input
+    id="documentInput"
+    class="hidden-input"
+    type="file"
+    accept=".pdf,.txt,.doc,.docx,image/*">
 
-                <button
-                    class="close-history"
-                    id="closeHistory">
-                    ×
-                </button>
+<div id="historyOverlay">
 
-            </div>
+    <aside id="historyDrawer">
 
-            <button
-                class="new-chat"
-                id="newChatBtn">
-                ＋ New Chat
-            </button>
+        <div class="history-header">
 
-            <div class="history-section-title">
-                Today
-            </div>
-
-            <div id="todayHistory"></div>
-
-            <div class="history-section-title">
-                Yesterday
-            </div>
-
-            <div id="yesterdayHistory"></div>
-
-        </aside>
-
-    </div>
-
-
-    <!-- VOICE AGENT SCREEN -->
-    <section id="voiceScreen">
-
-        <div class="voice-header">
-
-            <div class="voice-title">
+            <div class="history-logo">
                 Hello AI
             </div>
 
             <button
-                class="voice-close"
-                id="voiceClose">
+                class="close-history"
+                id="closeHistory">
                 ×
             </button>
 
         </div>
 
+        <button
+            class="new-chat"
+            id="newChatBtn">
+            ＋ New Chat
+        </button>
 
-        <div class="voice-content">
-
-            <div
-                class="voice-orb"
-                id="voiceOrb">
-
-                <div class="voice-wave">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-
-            </div>
-
-            <div
-                class="voice-status"
-                id="voiceStatus">
-                Ready
-            </div>
-
-            <div
-                class="voice-substatus"
-                id="voiceSubstatus">
-                Tap the center to start
-            </div>
-
+        <div class="history-section-title">
+            Today
         </div>
 
+        <div id="todayHistory"></div>
 
-        <div class="voice-bottom">
-
-            <div style="position:relative;">
-
-                <button
-                    class="voice-control"
-                    id="muteVoice">
-                    🔇
-                </button>
-
-                <span class="voice-control-label">
-                    Mute
-                </span>
-
-            </div>
-
-
-            <div style="position:relative;">
-
-                <button
-                    class="voice-control end"
-                    id="endVoice">
-                    ■
-                </button>
-
-                <span class="voice-control-label">
-                    End
-                </span>
-
-            </div>
-
-
-            <div style="position:relative;">
-
-                <button
-                    class="voice-control"
-                    id="keyboardVoice">
-                    ⌨
-                </button>
-
-                <span class="voice-control-label">
-                    Keyboard
-                </span>
-
-            </div>
-
+        <div class="history-section-title">
+            Yesterday
         </div>
 
+        <div id="yesterdayHistory"></div>
 
-        <div
-            class="voice-input-area"
-            id="voiceInputArea">
-
-            <input
-                class="voice-text-input"
-                id="voiceTextInput"
-                placeholder="Type a message...">
-
-        </div>
-
-    </section>
-
-
-    <div id="toast"></div>
+    </aside>
 
 </div>
 
+<section id="voiceScreen">
+
+    <div class="voice-header">
+
+        <div class="voice-title">
+            Hello AI
+        </div>
+
+        <button
+            class="voice-close"
+            id="voiceClose">
+            ×
+        </button>
+
+    </div>
+
+    <div class="voice-content">
+
+        <div
+            class="voice-orb"
+            id="voiceOrb">
+
+            <div class="voice-wave">
+
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+
+            </div>
+
+        </div>
+
+        <div
+            class="voice-status"
+            id="voiceStatus">
+            Ready
+        </div>
+
+        <div
+            class="voice-substatus"
+            id="voiceSubstatus">
+            Tap the center to start
+        </div>
+
+    </div>
+
+    <div class="voice-bottom">
+
+        <div style="position:relative;">
+
+            <button
+                class="voice-control"
+                id="muteVoice">
+                🔇
+            </button>
+
+            <span class="voice-control-label">
+                Mute
+            </span>
+
+        </div>
+
+        <div style="position:relative;">
+
+            <button
+                class="voice-control end"
+                id="endVoice">
+                ■
+            </button>
+
+            <span class="voice-control-label">
+                Stop
+            </span>
+
+        </div>
+
+        <div style="position:relative;">
+
+            <button
+                class="voice-control"
+                id="keyboardVoice">
+                ⌨
+            </button>
+
+            <span class="voice-control-label">
+                Keyboard
+            </span>
+
+        </div>
+
+    </div>
+
+    <div
+        class="voice-input-area"
+        id="voiceInputArea">
+
+        <input
+            class="voice-text-input"
+            id="voiceTextInput"
+            placeholder="Type a message...">
+
+    </div>
+
+</section>
+
+<div id="toast"></div>
+
+</div>
 
 <script>
-
-/* =========================================================
-   CONFIG
-========================================================= */
 
 const HISTORY_KEY =
     "helloAI_chat_history_v5";
@@ -1420,11 +1310,6 @@ const MAX_CONTEXT = 10;
 
 const HISTORY_MAX_AGE =
     24 * 60 * 60 * 1000;
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
 
 const chat =
     document.getElementById("chat");
@@ -1471,11 +1356,6 @@ const voiceTextInput =
 const toast =
     document.getElementById("toast");
 
-
-/* =========================================================
-   STATE
-========================================================= */
-
 let chats = [];
 
 let currentChatId = null;
@@ -1492,10 +1372,9 @@ let audioChunks = [];
 
 let voiceStream = null;
 
+let voiceStopRequested = false;
 
-/* =========================================================
-   UTILITY
-========================================================= */
+let currentVoiceAudio = null;
 
 function makeId(){
 
@@ -1505,8 +1384,8 @@ function makeId(){
         Math.random()
             .toString(36)
             .slice(2,8);
-}
 
+}
 
 function showToast(text){
 
@@ -1515,14 +1394,12 @@ function showToast(text){
     toast.classList.add("show");
 
     setTimeout(() => {
+
         toast.classList.remove("show");
+
     },2200);
+
 }
-
-
-/* =========================================================
-   HISTORY
-========================================================= */
 
 function loadHistory(){
 
@@ -1534,7 +1411,9 @@ function loadHistory(){
             );
 
         if(Array.isArray(saved)){
+
             chats = saved;
+
         }
 
     }catch(e){
@@ -1544,8 +1423,8 @@ function loadHistory(){
     }
 
     cleanOldHistory();
-}
 
+}
 
 function saveHistory(){
 
@@ -1553,8 +1432,8 @@ function saveHistory(){
         HISTORY_KEY,
         JSON.stringify(chats)
     );
-}
 
+}
 
 function cleanOldHistory(){
 
@@ -1564,14 +1443,18 @@ function cleanOldHistory(){
 
         return (
             now -
-            Number(chat.updatedAt || chat.createdAt || now)
+            Number(
+                chat.updatedAt ||
+                chat.createdAt ||
+                now
+            )
         ) <= HISTORY_MAX_AGE;
 
     });
 
     saveHistory();
-}
 
+}
 
 function createNewChat(){
 
@@ -1602,16 +1485,16 @@ function createNewChat(){
     renderHistory();
 
     return newChat;
-}
 
+}
 
 function getCurrentChat(){
 
     return chats.find(
         c => c.id === currentChatId
     );
-}
 
+}
 
 function ensureCurrentChat(){
 
@@ -1619,12 +1502,15 @@ function ensureCurrentChat(){
         getCurrentChat();
 
     if(!current){
-        current = createNewChat();
+
+        current =
+            createNewChat();
+
     }
 
     return current;
-}
 
+}
 
 function updateChatTitle(chatObj){
 
@@ -1641,17 +1527,24 @@ function updateChatTitle(chatObj){
         if(firstUser){
 
             let title =
-                String(firstUser.content || "")
+                String(
+                    firstUser.content || ""
+                )
                 .replace(/\s+/g," ")
                 .trim();
 
             if(title.length > 35){
+
                 title =
-                    title.substring(0,35) + "...";
+                    title.substring(0,35) +
+                    "...";
+
             }
 
             if(title){
+
                 chatObj.title = title;
+
             }
 
         }
@@ -1660,31 +1553,33 @@ function updateChatTitle(chatObj){
 
 }
 
-
-/* =========================================================
-   RENDER HISTORY
-========================================================= */
-
 function renderHistory(){
 
     const todayBox =
-        document.getElementById("todayHistory");
+        document.getElementById(
+            "todayHistory"
+        );
 
     const yesterdayBox =
-        document.getElementById("yesterdayHistory");
+        document.getElementById(
+            "yesterdayHistory"
+        );
 
     todayBox.innerHTML = "";
+
     yesterdayBox.innerHTML = "";
 
     const now = new Date();
 
     let todayCount = 0;
+
     let yesterdayCount = 0;
 
     chats
-        .sort((a,b) =>
-            (b.updatedAt || 0) -
-            (a.updatedAt || 0)
+        .sort(
+            (a,b) =>
+                (b.updatedAt || 0) -
+                (a.updatedAt || 0)
         )
         .forEach(item => {
 
@@ -1707,20 +1602,27 @@ function renderHistory(){
                 yesterday.toDateString();
 
             if(!isToday && !isYesterday){
+
                 return;
+
             }
 
             const btn =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
 
-            btn.className = "history-item";
+            btn.className =
+                "history-item";
 
             btn.textContent =
-                item.title || "New Chat";
+                item.title ||
+                "New Chat";
 
             btn.onclick = () => {
 
-                currentChatId = item.id;
+                currentChatId =
+                    item.id;
 
                 localStorage.setItem(
                     CURRENT_KEY,
@@ -1749,7 +1651,6 @@ function renderHistory(){
 
         });
 
-
     if(!todayCount){
 
         todayBox.innerHTML =
@@ -1766,15 +1667,15 @@ function renderHistory(){
 
 }
 
-
-/* =========================================================
-   CLEAN AI TEXT
-========================================================= */
-
 function cleanAIText(text){
 
-    if(text === null || text === undefined){
+    if(
+        text === null ||
+        text === undefined
+    ){
+
         return "";
+
     }
 
     let value =
@@ -1782,20 +1683,26 @@ function cleanAIText(text){
         .replace(/\r\n/g,"\n")
         .replace(/\r/g,"\n");
 
-    value = value
+    value =
+        value
         .split("\n")
         .filter(line => {
 
-            const t = line.trim();
+            const t =
+                line.trim();
 
             if(!t){
+
                 return true;
+
             }
 
             if(
                 /^[*_\-=~#/\\|<>]{4,}$/.test(t)
             ){
+
                 return false;
+
             }
 
             return true;
@@ -1803,18 +1710,24 @@ function cleanAIText(text){
         })
         .join("\n");
 
-    value = value
-        .replace(/([*#_~])\1{5,}/g,"$1$1")
-        .replace(/-{6,}/g,"---")
-        .replace(/_{6,}/g,"___");
+    value =
+        value
+        .replace(
+            /([*#_~])\1{5,}/g,
+            "$1$1"
+        )
+        .replace(
+            /-{6,}/g,
+            "---"
+        )
+        .replace(
+            /_{6,}/g,
+            "___"
+        );
 
     return value.trim();
+
 }
-
-
-/* =========================================================
-   MARKDOWN
-========================================================= */
 
 function renderMarkdown(text){
 
@@ -1822,37 +1735,45 @@ function renderMarkdown(text){
         cleanAIText(text);
 
     if(!clean){
+
         return "";
+
     }
 
     try{
 
         const html =
-            marked.parse(clean,{
-                breaks:true,
-                gfm:true
-            });
+            marked.parse(
+                clean,
+                {
+                    breaks:true,
+                    gfm:true
+                }
+            );
 
-        return DOMPurify.sanitize(html);
+        return DOMPurify.sanitize(
+            html
+        );
 
     }catch(e){
 
         const div =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
-        div.textContent = clean;
+        div.textContent =
+            clean;
 
         return div.innerHTML
-            .replace(/\n/g,"<br>");
+            .replace(
+                /\n/g,
+                "<br>"
+            );
 
     }
 
 }
-
-
-/* =========================================================
-   CHAT RENDER
-========================================================= */
 
 function renderChat(){
 
@@ -1871,68 +1792,151 @@ function renderChat(){
         );
 
         return;
+
     }
 
-    current.messages.forEach(message => {
+    current.messages.forEach(
+        message => {
 
-        if(message.role === "user"){
+            if(
+                message.role === "user"
+            ){
 
-            renderUserMessage(
-                message.content,
-                false
-            );
+                renderUserMessage(
+                    message.content,
+                    false
+                );
+
+            }
+
+            if(
+                message.role === "assistant"
+            ){
+
+                renderAIMessage(
+                    message.content,
+                    false
+                );
+
+            }
 
         }
-
-        if(message.role === "assistant"){
-
-            renderAIMessage(
-                message.content,
-                false
-            );
-
-        }
-
-    });
+    );
 
     scrollToBottom();
 
 }
 
-
 function createWelcome(){
 
     const div =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     div.id = "welcome";
 
     div.innerHTML = `
-        <div class="welcome-logo">Hello</div>
-        <div class="welcome-title">Hello AI</div>
-        <div class="welcome-text">
-            Ask anything. Anyway, I'm ready.
+
+        <div class="welcome-logo">
+
+            <div class="welcome-logo-symbol">
+
+                <svg
+                    viewBox="0 0 100 100"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Hello AI logo">
+
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r="43"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="3"/>
+
+                    <path
+                        d="M50 17
+                           C39 17 32 24 32 35
+                           C32 42 36 47 42 50
+                           C36 53 32 58 32 65
+                           C32 76 39 83 50 83
+                           C61 83 68 76 68 65
+                           C68 58 64 53 58 50
+                           C64 47 68 42 68 35
+                           C68 24 61 17 50 17Z"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"/>
+
+                    <path
+                        d="M25 50
+                           C25 39 33 32 44 32
+                           C50 32 55 35 59 40
+                           C63 35 68 32 75 32"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"/>
+
+                    <path
+                        d="M25 50
+                           C25 61 33 68 44 68
+                           C50 68 55 65 59 60
+                           C63 65 68 68 75 68"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="6"
+                        stroke-linecap="round"/>
+
+                </svg>
+
+            </div>
+
         </div>
+
+        <div class="welcome-logo-name">
+            Hello Ai
+        </div>
+
+        <div class="welcome-text">
+            Ask anything, anyway. I’m ready.
+        </div>
+
     `;
 
     return div;
+
 }
 
+function renderUserMessage(
+    text,
+    save=true
+){
 
-function renderUserMessage(text,save=true){
+    if(
+        welcome &&
+        welcome.parentNode
+    ){
 
-    if(welcome && welcome.parentNode){
         welcome.remove();
+
     }
 
     const row =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     row.className =
         "message-row user";
 
     const bubble =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     bubble.className =
         "message-bubble user-bubble";
@@ -1948,27 +1952,40 @@ function renderUserMessage(text,save=true){
 
 }
 
+function renderAIMessage(
+    text,
+    save=true
+){
 
-function renderAIMessage(text,save=true){
+    if(
+        welcome &&
+        welcome.parentNode
+    ){
 
-    if(welcome && welcome.parentNode){
         welcome.remove();
+
     }
 
     const row =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     row.className =
         "message-row ai";
 
     const container =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     container.className =
         "ai-container";
 
     const bubble =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     bubble.className =
         "message-bubble ai-bubble";
@@ -1977,7 +1994,9 @@ function renderAIMessage(text,save=true){
         renderMarkdown(text);
 
     const actions =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     actions.className =
         "ai-actions";
@@ -1985,31 +2004,35 @@ function renderAIMessage(text,save=true){
     const copy =
         createAction(
             "Copy",
-            () => copyText(
-                cleanAIText(text)
-            )
+            () =>
+                copyText(
+                    cleanAIText(text)
+                )
         );
 
     const speak =
         createAction(
             "Speak",
-            () => speakText(
-                cleanAIText(text)
-            )
+            () =>
+                speakText(
+                    cleanAIText(text)
+                )
         );
 
     const share =
         createAction(
             "Share",
-            () => shareText(
-                cleanAIText(text)
-            )
+            () =>
+                shareText(
+                    cleanAIText(text)
+                )
         );
 
     const regenerate =
         createAction(
             "Regenerate",
-            () => regenerateLast()
+            () =>
+                regenerateLast()
         );
 
     actions.appendChild(copy);
@@ -2028,11 +2051,15 @@ function renderAIMessage(text,save=true){
 
 }
 
-
-function createAction(label,callback){
+function createAction(
+    label,
+    callback
+){
 
     const btn =
-        document.createElement("button");
+        document.createElement(
+            "button"
+        );
 
     btn.className =
         "action-btn";
@@ -2040,15 +2067,12 @@ function createAction(label,callback){
     btn.textContent =
         label;
 
-    btn.onclick = callback;
+    btn.onclick =
+        callback;
 
     return btn;
+
 }
-
-
-/* =========================================================
-   SCROLL
-========================================================= */
 
 function scrollToBottom(){
 
@@ -2061,64 +2085,70 @@ function scrollToBottom(){
 
 }
 
+function copyText(text){
 
-/* =========================================================
-   COPY
-========================================================= */
+    if(!text){
 
-async function copyText(text){
-
-    try{
-
-        await navigator.clipboard.writeText(text);
-
-        showToast("Copied");
-
-    }catch(e){
-
-        const temp =
-            document.createElement("textarea");
-
-        temp.value = text;
-
-        document.body.appendChild(temp);
-
-        temp.select();
-
-        document.execCommand("copy");
-
-        temp.remove();
-
-        showToast("Copied");
+        return;
 
     }
 
+    navigator.clipboard
+        .writeText(text)
+        .then(
+            () => showToast("Copied")
+        )
+        .catch(
+            () => {
+
+                const temp =
+                    document.createElement(
+                        "textarea"
+                    );
+
+                temp.value = text;
+
+                document.body.appendChild(temp);
+
+                temp.select();
+
+                document.execCommand("copy");
+
+                temp.remove();
+
+                showToast("Copied");
+
+            }
+        );
+
 }
-
-
-/* =========================================================
-   SPEAK
-========================================================= */
 
 function speakText(text){
 
     if(!text){
+
         return;
+
     }
 
     if(
         !("speechSynthesis" in window)
     ){
 
-        showToast("Speech is not supported");
+        showToast(
+            "Speech is not supported"
+        );
 
         return;
+
     }
 
     window.speechSynthesis.cancel();
 
     const utterance =
-        new SpeechSynthesisUtterance(text);
+        new SpeechSynthesisUtterance(
+            text
+        );
 
     utterance.lang =
         detectLanguage(text);
@@ -2131,33 +2161,34 @@ function speakText(text){
 
 }
 
-
-/* =========================================================
-   LANGUAGE DETECTION
-========================================================= */
-
 function detectLanguage(text){
 
-    if(/[\u0980-\u09FF]/.test(text)){
+    if(
+        /[\u0980-\u09FF]/.test(text)
+    ){
+
         return "bn-IN";
+
     }
 
-    if(/[\u0900-\u097F]/.test(text)){
+    if(
+        /[\u0900-\u097F]/.test(text)
+    ){
+
         return "hi-IN";
+
     }
 
     return "en-IN";
+
 }
-
-
-/* =========================================================
-   SHARE
-========================================================= */
 
 async function shareText(text){
 
     if(!text){
+
         return;
+
     }
 
     try{
@@ -2165,8 +2196,11 @@ async function shareText(text){
         if(navigator.share){
 
             await navigator.share({
+
                 title:"Hello AI",
+
                 text:text
+
             });
 
         }else{
@@ -2181,57 +2215,69 @@ async function shareText(text){
 
     }catch(e){
 
-        if(e.name !== "AbortError"){
-            showToast("Unable to share");
+        if(
+            e.name !== "AbortError"
+        ){
+
+            showToast(
+                "Unable to share"
+            );
+
         }
 
     }
 
 }
 
-
-/* =========================================================
-   REGENERATE
-========================================================= */
-
 async function regenerateLast(){
 
     if(isProcessing){
+
         return;
+
     }
 
     const current =
         getCurrentChat();
 
     if(!current){
+
         return;
+
     }
 
     let lastUserIndex = -1;
 
     for(
-        let i=current.messages.length-1;
-        i>=0;
+        let i =
+            current.messages.length - 1;
+        i >= 0;
         i--
     ){
 
         if(
-            current.messages[i].role === "user"
+            current.messages[i].role ===
+            "user"
         ){
 
             lastUserIndex = i;
 
             break;
+
         }
 
     }
 
     if(lastUserIndex === -1){
+
         return;
+
     }
 
     const question =
-        current.messages[lastUserIndex].content;
+        current.messages[
+            lastUserIndex
+        ].content;
 
     current.messages =
         current.messages.slice(
@@ -2253,11 +2299,6 @@ async function regenerateLast(){
 
 }
 
-
-/* =========================================================
-   INPUT AUTO SIZE
-========================================================= */
-
 messageInput.addEventListener(
     "input",
     () => {
@@ -2276,11 +2317,6 @@ messageInput.addEventListener(
     }
 );
 
-
-/* =========================================================
-   MAIN ACTION STATE
-========================================================= */
-
 function updateMainAction(){
 
     if(isProcessing){
@@ -2289,18 +2325,24 @@ function updateMainAction(){
             "processing";
 
         mainAction.innerHTML = `
+
             <div class="processing-dots">
+
                 <span></span>
                 <span></span>
                 <span></span>
+
             </div>
+
         `;
 
         return;
+
     }
 
     const hasText =
-        messageInput.value.trim().length > 0;
+        messageInput.value.trim()
+            .length > 0;
 
     if(hasText){
 
@@ -2319,13 +2361,17 @@ function updateMainAction(){
         mainAction.className = "";
 
         mainAction.innerHTML = `
+
             <div class="wave-icon">
+
                 <span></span>
                 <span></span>
                 <span></span>
                 <span></span>
                 <span></span>
+
             </div>
+
         `;
 
         mainAction.setAttribute(
@@ -2337,17 +2383,14 @@ function updateMainAction(){
 
 }
 
-
-/* =========================================================
-   SEND / VOICE BUTTON
-========================================================= */
-
 mainAction.addEventListener(
     "click",
     async () => {
 
         if(isProcessing){
+
             return;
+
         }
 
         const text =
@@ -2366,25 +2409,25 @@ mainAction.addEventListener(
     }
 );
 
-
-/* =========================================================
-   SEND QUESTION
-========================================================= */
-
 async function sendQuestion(
     question,
     regenerate=false
 ){
 
     if(isProcessing){
+
         return;
+
     }
 
     question =
-        String(question || "").trim();
+        String(question || "")
+        .trim();
 
     if(!question){
+
         return;
+
     }
 
     const current =
@@ -2393,8 +2436,11 @@ async function sendQuestion(
     if(!regenerate){
 
         current.messages.push({
+
             role:"user",
+
             content:question
+
         });
 
         updateChatTitle(current);
@@ -2422,19 +2468,27 @@ async function sendQuestion(
     updateMainAction();
 
     const typingRow =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     typingRow.className =
         "message-row ai";
 
     typingRow.innerHTML = `
+
         <div class="ai-container">
+
             <div class="typing">
+
                 <span></span>
                 <span></span>
                 <span></span>
+
             </div>
+
         </div>
+
     `;
 
     chat.appendChild(typingRow);
@@ -2447,51 +2501,55 @@ async function sendQuestion(
             current.messages
                 .slice(-MAX_CONTEXT)
                 .map(m => ({
+
                     role:
                         m.role === "assistant"
                             ? "assistant"
                             : "user",
+
                     content:
-                        String(m.content || "")
+                        String(
+                            m.content || ""
+                        )
+
                 }));
 
         const response =
-            await fetch("/ask",{
+            await fetch(
+                "/ask",
+                {
 
-                method:"POST",
+                    method:"POST",
 
-                headers:{
-                    "Content-Type":
-                        "application/json"
-                },
+                    headers:{
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                body:JSON.stringify({
+                    body:JSON.stringify({
 
-                    question:question,
+                        question:question,
 
-                    history:recent,
+                        history:recent,
 
-                    voice_mode:false,
+                        voice_mode:false,
 
-                    /*
-                       Visitor's browser timezone.
-                       JavaScript returns:
-                       UTC - local time in minutes.
+                        timezone_offset_minutes:
+                            new Date()
+                                .getTimezoneOffset()
 
-                       Example:
-                       India = -330
-                    */
-                    timezone_offset_minutes:
-                        new Date().getTimezoneOffset()
+                    })
 
-                })
-
-            });
+                }
+            );
 
         let data = {};
 
         try{
-            data = await response.json();
+
+            data =
+                await response.json();
+
         }catch(e){}
 
         typingRow.remove();
@@ -2576,11 +2634,6 @@ async function sendQuestion(
 
 }
 
-
-/* =========================================================
-   ENTER TO SEND
-========================================================= */
-
 messageInput.addEventListener(
     "keydown",
     event => {
@@ -2596,18 +2649,15 @@ messageInput.addEventListener(
                 messageInput.value.trim();
 
             if(text){
+
                 sendQuestion(text);
+
             }
 
         }
 
     }
 );
-
-
-/* =========================================================
-   PLUS MENU
-========================================================= */
 
 plusBtn.addEventListener(
     "click",
@@ -2623,13 +2673,14 @@ plusBtn.addEventListener(
     }
 );
 
-
 document.addEventListener(
     "click",
     event => {
 
         if(
-            !plusMenu.contains(event.target) &&
+            !plusMenu.contains(
+                event.target
+            ) &&
             event.target !== plusBtn
         ){
 
@@ -2641,16 +2692,12 @@ document.addEventListener(
     }
 );
 
-
-/* =========================================================
-   CAMERA / GALLERY
-========================================================= */
-
 document.getElementById(
     "cameraBtn"
 ).onclick = () => {
 
-    plusMenu.style.display = "none";
+    plusMenu.style.display =
+        "none";
 
     document.getElementById(
         "cameraInput"
@@ -2658,12 +2705,12 @@ document.getElementById(
 
 };
 
-
 document.getElementById(
     "galleryBtn"
 ).onclick = () => {
 
-    plusMenu.style.display = "none";
+    plusMenu.style.display =
+        "none";
 
     document.getElementById(
         "galleryInput"
@@ -2671,27 +2718,18 @@ document.getElementById(
 
 };
 
-
-/* =========================================================
-   DOCUMENT
-========================================================= */
-
 document.getElementById(
     "documentBtn"
 ).onclick = () => {
 
-    plusMenu.style.display = "none";
+    plusMenu.style.display =
+        "none";
 
     document.getElementById(
         "documentInput"
     ).click();
 
 };
-
-
-/* =========================================================
-   CREATE IMAGE
-========================================================= */
 
 document.getElementById(
     "imageBtn"
@@ -2709,15 +2747,12 @@ document.getElementById(
 
 };
 
-
-/* =========================================================
-   IMAGE UPLOAD
-========================================================= */
-
 async function handleImage(file){
 
     if(!file){
+
         return;
+
     }
 
     const current =
@@ -2730,8 +2765,7 @@ async function handleImage(file){
 
         role:"user",
 
-        content:
-            userText
+        content:userText
 
     });
 
@@ -2746,19 +2780,27 @@ async function handleImage(file){
     updateMainAction();
 
     const typingRow =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     typingRow.className =
         "message-row ai";
 
     typingRow.innerHTML = `
+
         <div class="ai-container">
+
             <div class="typing">
+
                 <span></span>
                 <span></span>
                 <span></span>
+
             </div>
+
         </div>
+
     `;
 
     chat.appendChild(typingRow);
@@ -2782,8 +2824,11 @@ async function handleImage(file){
             await fetch(
                 "/vision",
                 {
+
                     method:"POST",
+
                     body:formData
+
                 }
             );
 
@@ -2855,7 +2900,6 @@ async function handleImage(file){
 
 }
 
-
 document.getElementById(
     "cameraInput"
 ).addEventListener(
@@ -2871,7 +2915,6 @@ document.getElementById(
 
     }
 );
-
 
 document.getElementById(
     "galleryInput"
@@ -2889,11 +2932,6 @@ document.getElementById(
     }
 );
 
-
-/* =========================================================
-   DOCUMENT
-========================================================= */
-
 document.getElementById(
     "documentInput"
 ).addEventListener(
@@ -2904,7 +2942,9 @@ document.getElementById(
             event.target.files[0];
 
         if(!file){
+
             return;
+
         }
 
         plusMenu.style.display =
@@ -2947,8 +2987,11 @@ document.getElementById(
                 await fetch(
                     "/document",
                     {
+
                         method:"POST",
+
                         body:formData
+
                     }
                 );
 
@@ -3019,11 +3062,6 @@ document.getElementById(
     }
 );
 
-
-/* =========================================================
-   HISTORY OPEN/CLOSE
-========================================================= */
-
 document.getElementById(
     "historyBtn"
 ).onclick = () => {
@@ -3043,7 +3081,6 @@ document.getElementById(
 
 };
 
-
 function closeHistory(){
 
     historyDrawer.classList.remove(
@@ -3059,12 +3096,10 @@ function closeHistory(){
 
 }
 
-
 document.getElementById(
     "closeHistory"
 ).onclick =
     closeHistory;
-
 
 historyOverlay.addEventListener(
     "click",
@@ -3082,11 +3117,6 @@ historyOverlay.addEventListener(
     }
 );
 
-
-/* =========================================================
-   NEW CHAT
-========================================================= */
-
 document.getElementById(
     "newChatBtn"
 ).onclick = () => {
@@ -3097,11 +3127,6 @@ document.getElementById(
 
 };
 
-
-/* =========================================================
-   VOICE MODE
-========================================================= */
-
 function openVoiceMode(){
 
     voiceScreen.style.display =
@@ -3109,16 +3134,21 @@ function openVoiceMode(){
 
     isVoiceMode = true;
 
+    voiceStopRequested = false;
+
     setVoiceState(
         "ready"
     );
 
 }
 
-
 function closeVoiceMode(){
 
+    voiceStopRequested = true;
+
     stopVoiceRecording();
+
+    stopCurrentVoiceAudio();
 
     voiceScreen.style.display =
         "none";
@@ -3134,22 +3164,37 @@ function closeVoiceMode(){
 
 }
 
-
 document.getElementById(
     "voiceClose"
 ).onclick =
     closeVoiceMode;
 
-
 document.getElementById(
     "endVoice"
-).onclick =
-    closeVoiceMode;
+).onclick = () => {
 
+    voiceStopRequested = true;
 
-/* =========================================================
-   VOICE STATE
-========================================================= */
+    if(
+        mediaRecorder &&
+        mediaRecorder.state === "recording"
+    ){
+
+        setVoiceState(
+            "thinking"
+        );
+
+        stopVoiceRecording();
+
+    }else{
+
+        showToast(
+            "Nothing is recording."
+        );
+
+    }
+
+};
 
 function setVoiceState(state){
 
@@ -3224,11 +3269,6 @@ function setVoiceState(state){
 
 }
 
-
-/* =========================================================
-   VOICE ORB START
-========================================================= */
-
 voiceOrb.addEventListener(
     "click",
     async () => {
@@ -3239,6 +3279,8 @@ voiceOrb.addEventListener(
 
         }else{
 
+            voiceStopRequested = false;
+
             await startVoiceRecording();
 
         }
@@ -3246,14 +3288,11 @@ voiceOrb.addEventListener(
     }
 );
 
-
-/* =========================================================
-   START VOICE RECORDING
-========================================================= */
-
 async function startVoiceRecording(){
 
     try{
+
+        voiceStopRequested = false;
 
         voiceStream =
             await navigator.mediaDevices
@@ -3271,7 +3310,9 @@ async function startVoiceRecording(){
         mediaRecorder.ondataavailable =
             event => {
 
-                if(event.data.size > 0){
+                if(
+                    event.data.size > 0
+                ){
 
                     audioChunks.push(
                         event.data
@@ -3284,15 +3325,22 @@ async function startVoiceRecording(){
         mediaRecorder.onstop =
             async () => {
 
+                const recorder =
+                    mediaRecorder;
+
                 const blob =
                     new Blob(
                         audioChunks,
                         {
                             type:
-                                mediaRecorder.mimeType ||
-                                "audio/webm"
+                                recorder &&
+                                recorder.mimeType
+                                    ? recorder.mimeType
+                                    : "audio/webm"
                         }
                     );
+
+                mediaRecorder = null;
 
                 await processVoiceBlob(
                     blob
@@ -3313,6 +3361,21 @@ async function startVoiceRecording(){
             error
         );
 
+        mediaRecorder = null;
+
+        if(voiceStream){
+
+            voiceStream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+            voiceStream = null;
+
+        }
+
         showToast(
             "Microphone permission is required."
         );
@@ -3321,22 +3384,29 @@ async function startVoiceRecording(){
 
 }
 
-
-/* =========================================================
-   STOP RECORDING
-========================================================= */
-
 function stopVoiceRecording(){
 
     if(mediaRecorder){
 
         try{
 
-            mediaRecorder.stop();
+            if(
+                mediaRecorder.state ===
+                "recording"
+            ){
 
-        }catch(e){}
+                mediaRecorder.stop();
 
-        mediaRecorder = null;
+            }
+
+        }catch(e){
+
+            console.error(
+                "STOP RECORDING ERROR:",
+                e
+            );
+
+        }
 
     }
 
@@ -3345,7 +3415,8 @@ function stopVoiceRecording(){
         voiceStream
             .getTracks()
             .forEach(
-                track => track.stop()
+                track =>
+                    track.stop()
             );
 
         voiceStream = null;
@@ -3354,12 +3425,9 @@ function stopVoiceRecording(){
 
 }
 
-
-/* =========================================================
-   PROCESS VOICE
-========================================================= */
-
-async function processVoiceBlob(blob){
+async function processVoiceBlob(
+    blob
+){
 
     setVoiceState(
         "thinking"
@@ -3414,11 +3482,6 @@ async function processVoiceBlob(blob){
 
         }
 
-        /*
-           Put voice transcript into
-           normal chat context.
-        */
-
         const current =
             ensureCurrentChat();
 
@@ -3443,18 +3506,24 @@ async function processVoiceBlob(blob){
             current.messages
                 .slice(-MAX_CONTEXT)
                 .map(m => ({
+
                     role:
                         m.role === "assistant"
                             ? "assistant"
                             : "user",
+
                     content:
-                        String(m.content || "")
+                        String(
+                            m.content || ""
+                        )
+
                 }));
 
         const response =
             await fetch(
                 "/ask",
                 {
+
                     method:"POST",
 
                     headers:{
@@ -3470,13 +3539,9 @@ async function processVoiceBlob(blob){
 
                         voice_mode:true,
 
-                        /*
-                           Visitor timezone for voice
-                           questions such as:
-                           "What time is it?"
-                        */
                         timezone_offset_minutes:
-                            new Date().getTimezoneOffset()
+                            new Date()
+                                .getTimezoneOffset()
 
                     })
 
@@ -3502,6 +3567,14 @@ async function processVoiceBlob(blob){
                 ""
             );
 
+        if(!answer){
+
+            throw new Error(
+                "AI returned an empty voice answer."
+            );
+
+        }
+
         current.messages.push({
 
             role:"assistant",
@@ -3521,27 +3594,30 @@ async function processVoiceBlob(blob){
             "speaking"
         );
 
-        /*
-           Existing Sarvam/browser TTS
-           remains compatible for now.
-        */
+        if(!isVoiceMuted){
 
-        await speakVoiceAnswer(
-            answer
-        );
+            await speakVoiceAnswer(
+                answer
+            );
 
-        /*
-           Return to listening state
-           for continuous voice experience.
-        */
+        }
 
-        if(isVoiceMode){
+        if(
+            isVoiceMode &&
+            !voiceStopRequested
+        ){
 
             setVoiceState(
                 "listening"
             );
 
             await startVoiceRecording();
+
+        }else{
+
+            setVoiceState(
+                "ready"
+            );
 
         }
 
@@ -3563,7 +3639,9 @@ async function processVoiceBlob(blob){
 
         setTimeout(() => {
 
-            if(isVoiceMode){
+            if(
+                isVoiceMode
+            ){
 
                 setVoiceState(
                     "ready"
@@ -3577,20 +3655,79 @@ async function processVoiceBlob(blob){
 
 }
 
+function stopCurrentVoiceAudio(){
 
-/* =========================================================
-   VOICE ANSWER / EXISTING TTS
-========================================================= */
+    if(currentVoiceAudio){
 
-async function speakVoiceAnswer(text){
+        try{
 
-    if(!text){
-        return;
+            currentVoiceAudio.pause();
+
+            currentVoiceAudio.currentTime =
+                0;
+
+        }catch(e){}
+
+        currentVoiceAudio = null;
+
     }
 
-    /*
-       Try existing /tts backend first.
-    */
+}
+
+function makeAudioSource(
+    value
+){
+
+    if(!value){
+
+        return null;
+
+    }
+
+    const src =
+        String(value);
+
+    if(
+        src.startsWith(
+            "data:"
+        )
+    ){
+
+        return src;
+
+    }
+
+    if(
+        src.startsWith(
+            "http://"
+        ) ||
+        src.startsWith(
+            "https://"
+        )
+    ){
+
+        return src;
+
+    }
+
+    return (
+        "data:audio/wav;base64," +
+        src
+    );
+
+}
+
+async function speakVoiceAnswer(
+    text
+){
+
+    if(!text){
+
+        return;
+
+    }
+
+    stopCurrentVoiceAudio();
 
     try{
 
@@ -3598,6 +3735,7 @@ async function speakVoiceAnswer(text){
             await fetch(
                 "/tts",
                 {
+
                     method:"POST",
 
                     headers:{
@@ -3606,7 +3744,12 @@ async function speakVoiceAnswer(text){
                     },
 
                     body:JSON.stringify({
-                        text:text
+
+                        text:text,
+
+                        language:
+                            detectLanguage(text)
+
                     })
 
                 }
@@ -3617,83 +3760,179 @@ async function speakVoiceAnswer(text){
             const data =
                 await response.json();
 
-            if(data.audio){
+            if(
+                Array.isArray(
+                    data.audios
+                ) &&
+                data.audios.length > 0
+            ){
 
-                const audio =
-                    new Audio(
-                        data.audio
-                    );
+                for(
+                    const audioData
+                    of data.audios
+                ){
 
-                await new Promise(
-                    resolve => {
+                    if(isVoiceMuted){
 
-                        audio.onended =
-                            resolve;
-
-                        audio.onerror =
-                            resolve;
-
-                        audio.play()
-                            .catch(resolve);
+                        break;
 
                     }
-                );
+
+                    const source =
+                        makeAudioSource(
+                            audioData
+                        );
+
+                    if(source){
+
+                        await playAudioSource(
+                            source
+                        );
+
+                    }
+
+                }
 
                 return;
 
             }
 
+            if(data.audio){
+
+                const source =
+                    makeAudioSource(
+                        data.audio
+                    );
+
+                if(source){
+
+                    await playAudioSource(
+                        source
+                    );
+
+                    return;
+
+                }
+
+            }
+
         }
 
-    }catch(e){
+    }catch(error){
 
         console.warn(
             "Backend TTS unavailable:",
-            e
+            error
         );
 
     }
 
-    /*
-       Browser fallback
-    */
+    if(
+        "speechSynthesis" in window &&
+        !isVoiceMuted
+    ){
 
-    if("speechSynthesis" in window){
+        await new Promise(
+            resolve => {
 
-        await new Promise(resolve => {
+                window.speechSynthesis.cancel();
 
-            window.speechSynthesis.cancel();
+                const utterance =
+                    new SpeechSynthesisUtterance(
+                        text
+                    );
 
-            const utterance =
-                new SpeechSynthesisUtterance(
-                    text
+                utterance.lang =
+                    detectLanguage(text);
+
+                utterance.rate =
+                    .95;
+
+                utterance.onend =
+                    resolve;
+
+                utterance.onerror =
+                    resolve;
+
+                window.speechSynthesis.speak(
+                    utterance
                 );
 
-            utterance.lang =
-                detectLanguage(text);
-
-            utterance.rate = .95;
-
-            utterance.onend =
-                resolve;
-
-            utterance.onerror =
-                resolve;
-
-            window.speechSynthesis.speak(
-                utterance
-            );
-
-        });
+            }
+        );
 
     }
 
 }
 
+function playAudioSource(
+    source
+){
 
-/* =========================================================
-   MUTE
-========================================================= */
+    return new Promise(
+        resolve => {
+
+            if(
+                isVoiceMuted ||
+                !source
+            ){
+
+                resolve();
+
+                return;
+
+            }
+
+            const audio =
+                new Audio(source);
+
+            currentVoiceAudio =
+                audio;
+
+            let finished = false;
+
+            const finish = () => {
+
+                if(finished){
+
+                    return;
+
+                }
+
+                finished = true;
+
+                if(
+                    currentVoiceAudio ===
+                    audio
+                ){
+
+                    currentVoiceAudio =
+                        null;
+
+                }
+
+                resolve();
+
+            };
+
+            audio.onended =
+                finish;
+
+            audio.onerror =
+                finish;
+
+            audio.onabort =
+                finish;
+
+            audio.play()
+                .catch(
+                    finish
+                );
+
+        }
+    );
+
+}
 
 document.getElementById(
     "muteVoice"
@@ -3713,32 +3952,35 @@ document.getElementById(
 
         window.speechSynthesis.cancel();
 
-        showToast("Voice muted");
+        stopCurrentVoiceAudio();
+
+        showToast(
+            "Voice muted"
+        );
 
     }else{
 
-        showToast("Voice unmuted");
+        showToast(
+            "Voice unmuted"
+        );
 
     }
 
 };
-
-
-/* =========================================================
-   KEYBOARD IN VOICE MODE
-========================================================= */
 
 document.getElementById(
     "keyboardVoice"
 ).onclick = () => {
 
     voiceInputArea.style.display =
-        voiceInputArea.style.display === "block"
+        voiceInputArea.style.display ===
+            "block"
             ? "none"
             : "block";
 
     if(
-        voiceInputArea.style.display === "block"
+        voiceInputArea.style.display ===
+        "block"
     ){
 
         voiceTextInput.focus();
@@ -3746,7 +3988,6 @@ document.getElementById(
     }
 
 };
-
 
 voiceTextInput.addEventListener(
     "keydown",
@@ -3762,7 +4003,9 @@ voiceTextInput.addEventListener(
                 voiceTextInput.value.trim();
 
             if(!text){
+
                 return;
+
             }
 
             voiceTextInput.value = "";
@@ -3776,22 +4019,9 @@ voiceTextInput.addEventListener(
     }
 );
 
-
-/* =========================================================
-   STARTUP
-========================================================= */
-
 function startup(){
 
     loadHistory();
-
-    /*
-       IMPORTANT:
-       Every page refresh opens a fresh
-       Normal Chat/Home screen.
-
-       Existing 24h chats remain in history.
-    */
 
     currentChatId = null;
 
@@ -3806,7 +4036,6 @@ function startup(){
     updateMainAction();
 
 }
-
 
 startup();
 
