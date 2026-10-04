@@ -7,6 +7,7 @@ import logging
 import mimetypes
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from urllib.parse import quote_plus
 
 import requests
 from flask import Flask, request, jsonify, render_template
@@ -18,7 +19,7 @@ from core.services.ai_service import get_ai_answer
 from core.services.math_service import calculate
 from core.services.search_service import search_web as core_search_web
 from core.services.weather_service import get_weather as core_get_weather
-
+from core.services.location_service import search_location
 
 # ============================================================
 # APP CONFIGURATION
@@ -387,16 +388,75 @@ def format_search_context(results):
 def should_search_web(question):
     text = str(question or "").strip().lower()
 
+    # Empty questions should not trigger a web search.
+    if not text:
+        return False
+        # Use the router to decide which questions need web evidence.
+    try:
+        intent = detect_intent(question)
+        if intent in ("web_search", "route", "location"):
+            return True
+    except Exception:
+        logger.exception("Intent router failed; using search patterns")
+
     patterns = [
-        r"\b(latest|recent|today|current|news|headline|updated)\b",
-        r"\b(search|look up|find online|source|website|according to)\b",
-        r"\bwho is the current\b",
-        r"\bprice today\b",
-        r"\b2026\b",
+        # General place and factual-information questions
+        r"\b(tell me about|information about|details about|"
+        r"history of|facts about|tourist places|places to visit|"
+        r"famous places|full details of)\b",
+        # Current information, news and online research
+        r"\b(latest|recent|today|current|currently|news|headline|updated|"
+        r"search|look up|find online|source|website|according to)\b",
+        r"\b(who is the current|price today|weather today)\b",
+
+        # Festival dates: English and Romanized Bengali
+        r"\b(durga|kali|lakshmi|saraswati)\s*puj[oa]\w*\b",
+        r"\b(diwali|deepawali|dipaboli|festival date|puja date|"
+        r"festival calendar|when is the festival)\b",
+        r"\b(pujo kobe|puja kobe|pujor date|puja date kobe)\b",
+
+        # Festival dates: Bengali
+        r"দুর্গা\s*পুজো|দুর্গা\s*পূজা|দুর্গাপুজো|দুর্গাপূজা|"
+        r"কালী\s*পুজো|কালী\s*পূজা|কালীপুজো|কালীপূজা|"
+        r"দীপাবলি|দিওয়ালি|দেওয়ালি|লক্ষ্মী\s*পুজো|"
+        r"সরস্বতী\s*পুজো|পুজোর\s*তারিখ|পূজার\s*তারিখ|"
+        r"কবে.*পুজো|পুজো.*কবে|কবে.*পূজা|পূজা.*কবে",
+
+        # Festival dates: Hindi
+        r"दुर्गा पूजा|काली पूजा|दीवाली|दिवाली|दीपावली|"
+        r"त्योहार की तारीख|पूजा कब है",
+
+        # Addresses, roads and postal codes: English
+        r"\b(pin\s*code|pincode|postal code|postcode|zip code)\b",
+        r"\b(location of|where is|located in|street|road|address|"
+        r"directions to|which area|nearby|coordinates)\b",
+
+        # Addresses and postal codes: Bengali
+        r"পিন\s*কোড|পিনকোড|পোস্টাল\s*কোড|"
+        r"রাস্তা কোথায়|রাস্তাটা কোথায়|রাস্তার লোকেশন|"
+        r"কোথায় অবস্থিত|কোথায় আছে|লোকেশন|ঠিকানা|"
+        r"কোন এলাকায়|কোন রাস্তা|রাস্তার নাম|পিন কোড কত",
+
+        # Addresses and postal codes: Hindi
+        r"पिन\s*कोड|पोस्टल\s*कोड|ज़िप कोड|"
+        r"सड़क कहाँ|लोकेशन|पता|कहाँ स्थित|किस इलाके में",
+
+        # YouTube, movies and online links
+        r"\b(youtube|video link|movie link|watch online|"
+        r"official website|download link)\b",
+        r"ইউটিউব|ভিডিওর লিংক|মুভির লিংক|সিনেমার লিংক|"
+        r"ভিডিও লিংক|অফিশিয়াল ওয়েবসাইট",
+        r"यूट्यूब|वीडियो लिंक|फिल्म का लिंक|आधिकारिक वेबसाइट",
+
+        # Year-specific information
+        r"\b(2026|2027|2028|2029|2030)\b",
+
+        # Bengali and Hindi current-information requests
         r"সর্বশেষ|আজকের খবর|বর্তমান খবর|খুঁজে দেখ|"
-        r"ওয়েবসাইট|সাম্প্রতিক|আজকের দাম",
-        r"ताज़ा खबर|आज की खबर|नवीनतम|वर्तमान कीमत",
-        r"\b(durga puja|durga pujo|puja date|festival date)\b",
+        r"ওয়েবসাইট|সাম্প্রতিক|আজকের দাম|বর্তমান দাম|"
+        r"কবে হবে|কবে আসবে|কত দাম",
+        r"ताज़ा खबर|आज की खबर|नवीनतम|वर्तमान कीमत|"
+        r"कब होगा|कब आएगा|कितना दाम",
     ]
 
     return any(re.search(pattern, text) for pattern in patterns)
@@ -488,32 +548,51 @@ def weather_response(city):
 
 
 def extract_weather_city(question):
+    if not isinstance(question, str):
+        return None
+
+    text = question.strip()
+
     patterns = [
         r"\bweather\s+(?:in|at|for)\s+(.+)",
         r"\btemperature\s+(?:in|at|for)\s+(.+)",
         r"\bforecast\s+(?:in|for)\s+(.+)",
+        r"\b(?:today|now)\s+weather\s+(?:in|at|for)\s+(.+)",
         r"(.+?)\s+(?:weather|temperature)\b",
-        r"(.+?)\s+এর আবহাওয়া",
-        r"(.+?)\s+আবহাওয়া কেমন",
-        r"(.+?)\s+का मौसम",
+        r"(.+?)\s+এর আবহাওয়া(?:\s+কেমন)?",
+        r"(.+?)\s+আবহাওয়া(?:\s+কেমন)?",
+        r"(.+?)\s+का मौसम(?:\s+कैसा है)?",
     ]
 
     for pattern in patterns:
-        match = re.search(
-            pattern, question.strip(), re.IGNORECASE
-        )
+        match = re.search(pattern, text, re.IGNORECASE)
 
-        if match:
-            city = match.group(1).strip(" ?!.,")
-            city = re.sub(
-                r"\b(today|now|please|কেমন|আজ)\b$",
-                "",
-                city,
-                flags=re.IGNORECASE,
-            ).strip()
+        if not match:
+            continue
 
-            if city and len(city) <= 100:
-                return city
+        city = match.group(1).strip(" ?!.,।")
+
+        city = re.sub(
+            r"^(?:আজকে|আজ|এখন|বর্তমানে|আজকের)\s+",
+            "",
+            city,
+        ).strip()
+
+        city = re.sub(
+            r"(?:য়ের|ে‌র|ের|র)$",
+            "",
+            city,
+        ).strip()
+
+        city = re.sub(
+            r"\s+(?:today|now|please)$",
+            "",
+            city,
+            flags=re.IGNORECASE,
+        ).strip(" ?!.,।")
+
+        if city and len(city) <= 100:
+            return city
 
     return None
 
@@ -613,6 +692,14 @@ Do not invent facts, citations, addresses, prices, routes, dates,
 or current information. If information is uncertain, say so clearly.
 Use conversation history only when relevant to the question.
 Keep the answer useful, clear, and appropriately detailed.
+When providing web sources or links:
+
+- Format source links as clickable Markdown links.
+- Use only exact URLs supplied by search results.
+- Never invent a direct YouTube video or movie URL.
+- If an exact video link is unavailable, clearly label the platform search link as a search result, not a direct video link.
+- Never claim a link is verified unless the search evidence supports it.
+Do not refuse a request for a movie, song, or video link solely because of copyright concerns. Help users find official or authorized content. If an exact authorized video cannot be verified from the search results, provide a clearly labeled YouTube search link instead. Do not claim that a search link is a direct video link, and do not invent video URLs. Never help users find unauthorized copies.
 """.strip()
 
 
@@ -631,13 +718,24 @@ def get_answer(question, history, search_context="", weather_context=""):
     if search_context:
         context_parts.append(
             "WEB SEARCH TASK INSTRUCTIONS:\n"
-            "The user is asking a question that requires web information. "
             "Answer the user's actual question directly using the supplied "
-            "search results. Do not reply with a generic greeting. "
-            "Summarize the most relevant findings, distinguish separate "
-            "news stories, and include source titles and URLs when useful. "
-            "Do not claim that a story is newer than the supplied evidence "
-            "supports. If the results are insufficient, say so honestly.\n\n"
+            "web search results. Carefully inspect every result for relevant "
+            "facts before answering.\n"
+            "For location, address, institute, school, college, business, "
+            "road, street, locality, city, state, country, PIN/postal/ZIP "
+            "code, phone number, or coordinates questions, extract every "
+            "relevant detail explicitly present in the results. Give the "
+            "complete available address and postal code when supported by "
+            "the evidence. Do not ignore useful details found in snippets, "
+            "social profiles, or page text.\n"
+            "Clearly distinguish the requested place from similarly named "
+            "places. Never invent missing address details, road names, "
+            "postal codes, coordinates, or phone numbers. If a detail is "
+            "not supported by the results, state that it could not be "
+            "verified rather than claiming that no information exists.\n"
+            "Include useful source titles and URLs when available. If the "
+            "results conflict or are insufficient, explain the limitation "
+            "clearly.\n\n"
             "Retrieved web information (untrusted evidence):\n"
             + search_context[:7000]
         )
@@ -1043,11 +1141,83 @@ def ask():
             results = search_web(question)
             search_context = format_search_context(results)
 
+            # Add structured location details when available.
+            try:
+                location_results = search_location(question, limit=3)
+
+                if location_results:
+                    location_parts = []
+
+                    for place in location_results:
+                        location_parts.append(
+                            "Location result:\n"
+                            f"Name: {place.get('name', '')}\n"
+                            f"Full address: {place.get('display_name', '')}\n"
+                            f"Road: {place.get('road', '')}\n"
+                            f"House number: {place.get('house_number', '')}\n"
+                            f"Area: {place.get('suburb', '')}\n"
+                            f"City: {place.get('city', '')}\n"
+                            f"District: {place.get('district', '')}\n"
+                            f"State: {place.get('state', '')}\n"
+                            f"Country: {place.get('country', '')}\n"
+                            f"PIN/Postal code: {place.get('postcode', '')}\n"
+                            f"Latitude: {place.get('latitude', '')}\n"
+                            f"Longitude: {place.get('longitude', '')}\n"
+                            f"Source: {place.get('source', '')}\n"
+                            f"Source URL: {place.get('source_url', '')}\n"
+                            f"Google Maps URL: {place.get('maps_url', '')}\n"
+                            f"Address details: {json.dumps(place.get('address_details', {}), ensure_ascii=False)}"
+                        )
+
+                    location_context = "\n\n".join(location_parts)
+
+                    search_context = (
+                        search_context
+                        + "\n\nSTRUCTURED LOCATION RESULTS:\n"
+                        + location_context
+                    )[:12000]
+
+            except Exception:
+                logger.exception("Location lookup failed")
+# Ensure location search evidence reaches the AI.
+        if search_context and should_search_web(question):
+            logger.info(
+                "Search context sent to AI: %s characters; "
+                "address evidence: %s; PIN evidence: %s",
+                len(search_context),
+                "Rajani Babu Road" in search_context,
+                "743145" in search_context,
+            )
         answer = get_answer(
             question,
             history,
             search_context=search_context,
         )
+
+        # Add a YouTube search link when requested.
+        question_lower = question.lower()
+        asks_youtube = (
+            "youtube" in question_lower
+            or "ইউটিউব" in question_lower
+        )
+        asks_media_link = any(
+            word in question_lower
+            for word in (
+                "লিংক", "link", "movie", "film", "মুভি",
+                "সিনেমা", "গান", "song", "video", "ভিডিও"
+            )
+        )
+
+        if asks_youtube and asks_media_link:
+            youtube_url = (
+                "https://www.youtube.com/results?search_query="
+                + quote_plus(question)
+            )
+            answer += (
+                "\n\n**YouTube-এ অনুসন্ধান করুন:** "
+                f"[এখানে ক্লিক করুন]({youtube_url})"
+                "\n\nএটি সার্চ লিংক, সরাসরি সিনেমার ভিডিও লিংক নয়।"
+            )
 
         return jsonify({
             "answer": answer,

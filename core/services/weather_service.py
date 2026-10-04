@@ -107,14 +107,32 @@ def _valid_coordinate(value, minimum, maximum) -> bool:
         and abs(number) != float("inf")
     )
 
+def normalize_weather_city(city: str) -> str:
+    """Normalize common Bengali city names for geocoding."""
 
+    city = city.strip()
+
+    city_aliases = {
+        "কলকাতা": "Kolkata",
+        "কলকাতার": "Kolkata",
+        "কোলকাতা": "Kolkata",
+        "দিল্লি": "Delhi",
+        "মুম্বাই": "Mumbai",
+        "চেন্নাই": "Chennai",
+        "ব্যাঙ্গালোর": "Bengaluru",
+        "বেঙ্গালুরু": "Bengaluru",
+        "হায়দ্রাবাদ": "Hyderabad",
+        "পুনে": "Pune",
+    }
+
+    return city_aliases.get(city, city)
 def get_weather(city: str) -> dict:
     """Get current weather for a city using Open-Meteo."""
 
     if not isinstance(city, str):
         raise ValueError("City name must be text")
 
-    city = city.strip()
+    city = normalize_weather_city(city)
 
     if not city:
         raise ValueError("Please provide a city name")

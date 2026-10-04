@@ -20,12 +20,11 @@ MAX_QUERY_LENGTH = 4000
 MAX_TITLE_LENGTH = 300
 MAX_CONTENT_LENGTH = 3000
 MAX_URL_LENGTH = 2000
-
 NEWS_PATTERN = re.compile(
     r"\b("
     r"news|latest news|breaking news|today's news|today news|"
     r"current news|recent news|headlines|top stories|"
-    r"latest updates|"
+    r"latest updates"
     r")\b",
     re.IGNORECASE,
 )
