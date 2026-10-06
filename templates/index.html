@@ -401,28 +401,34 @@ textarea{
     right:0;
     bottom:0;
     height:92px;
+    box-sizing:border-box;
     background:linear-gradient(
         to top,
         #000 65%,
         rgba(0,0,0,.92)
     );
     display:flex;
-    align-items:flex-start;
+    align-items:center;
     justify-content:center;
-    padding:8px 12px 17px;
+    padding:8px 12px;
     z-index:90;
 }
 
 .input-box{
+    position:relative;
     width:min(900px,100%);
-    min-height:56px;
+    height:58px;
+    min-height:58px;
+    max-height:58px;
     background:#171717;
     border:1px solid #292929;
     border-radius:29px;
     display:flex;
-    align-items:flex-end;
-    padding:7px 8px 7px 7px;
+    align-items:center;
+    padding:7px 58px 7px 54px;
+    box-sizing:border-box;
     box-shadow:0 4px 20px rgba(0,0,0,.4);
+    overflow:hidden;
 }
 
 .plus-btn{
@@ -444,17 +450,24 @@ textarea{
 }
 
 #messageInput{
-    flex:1;
+    position:relative;
+    flex:1 1 auto;
     min-width:0;
-    max-height:120px;
+    width:100%;
+    height:40px;
     min-height:40px;
+    max-height:40px;
     resize:none;
+    overflow-y:auto;
+    overflow-x:hidden;
     border:0;
     background:transparent;
     color:#fff;
     font-size:15px;
     line-height:1.45;
     padding:10px 7px;
+    box-sizing:border-box;
+    align-self:center;
 }
 
 #messageInput::placeholder{
@@ -970,7 +983,57 @@ textarea{
     }
 
 }
+html,
+body{
+    height:100%;
+    overflow:hidden;
+}
 
+.bottom-area{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    height:92px;
+    z-index:90;
+}
+
+.input-box{
+    position:relative;
+    height:58px;
+    min-height:58px;
+    max-height:58px;
+}
+
+#messageInput{
+    height:40px !important;
+    min-height:40px !important;
+    max-height:40px !important;
+    overflow-y:auto !important;
+    resize:none !important;
+}
+
+#mainAction{
+    position:absolute !important;
+    right:7px !important;
+    top:7px !important;
+    bottom:auto !important;
+    width:44px !important;
+    height:44px !important;
+    min-width:44px !important;
+    margin:0 !important;
+    z-index:10 !important;
+}
+
+.plus-btn{
+    position:absolute !important;
+    left:7px !important;
+    top:7px !important;
+    width:42px !important;
+    height:42px !important;
+    margin:0 !important;
+    z-index:10 !important;
+}
 </style>
 </head>
 
@@ -2306,16 +2369,11 @@ messageInput.addEventListener(
         messageInput.style.height =
             "40px";
 
-        messageInput.style.height =
-            Math.min(
-                messageInput.scrollHeight,
-                120
-            ) + "px";
-
         updateMainAction();
 
     }
 );
+
 
 function updateMainAction(){
 

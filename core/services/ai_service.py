@@ -8,6 +8,7 @@ Provider order:
 
 import logging
 import os
+import time
 from typing import Any, Optional
 
 import requests
@@ -56,14 +57,107 @@ REQUEST_TIMEOUT = 45
 MAX_HISTORY_MESSAGES = 20
 MAX_MESSAGE_LENGTH = 12000
 
-SYSTEM_PROMPT = (
-    "You are Hello AI, a helpful, accurate, and honest assistant. "
-    "Answer the user's actual question directly. "
-    "Do not invent facts, sources, quotations, or current information. "
-    "If you are uncertain, clearly say so. "
-    "Respond in the user's language and use conversation history "
-    "when it is relevant. Distinguish verified facts from estimates."
-)
+# Provider cooldown after temporary rate-limit/service errors.
+# This prevents repeatedly hitting a provider that is currently unavailable.
+PROVIDER_COOLDOWN_SECONDS = 60
+
+# Stores the time until which each temporarily failed provider
+# should be skipped.
+_provider_cooldowns: dict[str, float] = {}
+
+
+# ============================================================
+# SYSTEM PROMPT
+# ============================================================
+
+SYSTEM_PROMPT = """
+You are Hello AI, a helpful, accurate, and honest AI assistant.
+
+Answer the user's actual question directly and clearly.
+
+IMPORTANT RULES:
+
+1. Use the user's language.
+   - Bengali question -> Bengali answer.
+   - Hindi question -> Hindi answer.
+   - English question -> English answer.
+   - Romanized Bengali -> Bengali script.
+   - Romanized Hindi -> Hindi script.
+
+2. When the user question contains supplied web-search evidence,
+   treat that evidence as the primary source for current or
+   location-specific facts.
+
+3. If useful evidence is supplied, DO NOT say that you have no
+   information merely because you do not already know the fact
+   from your internal knowledge.
+
+4. For location, address, road, locality, landmark, school,
+   college, business, station, PIN/postal code, phone number,
+   coordinates, route, or similar questions:
+   - carefully inspect the supplied evidence;
+   - identify the exact requested place;
+   - use matching evidence even if it comes from a directory,
+     search snippet, map-related result, or video description;
+   - never invent a missing detail;
+   - if different sources give different details, explicitly
+     mention the conflict instead of choosing a value without
+     evidence.
+
+5. If a search result gives only partial information, provide the
+   verified part and clearly say which part could not be verified.
+
+6. Do not confuse similarly named places, especially places in
+   different cities, districts, states, or countries.
+
+7. Do not use unrelated search results just because they contain
+   some of the same words as the question.
+
+8. For current information, prefer recent and directly relevant
+   supplied search evidence over old general knowledge.
+
+9. Conversation history is useful for context, but it must not
+   override directly relevant supplied search evidence.
+
+10. Never fabricate facts, addresses, PIN codes, phone numbers,
+    routes, timings, URLs, sources, quotations, or current events.
+
+11. If the supplied evidence is conflicting, explain the conflict
+    briefly and give the safest evidence-based answer.
+
+12. Keep the answer focused. Do not repeat the same sentence,
+    phrase, character, or punctuation many times.
+
+13. If the user asks a simple factual question and the evidence
+    clearly supports a simple answer, answer directly instead of
+    giving unnecessary disclaimers.
+    14. Match the answer length to the user's request.
+    - For a simple question, give a short and direct answer.
+    - Do not automatically provide extra address, PIN code,
+      map information, coordinates, phone number, sources,
+      or other details unless the user asks for them.
+    - If the user asks for more details, then provide the
+      relevant additional information.
+
+15. Do not include links, URLs, website addresses, map links,
+    or source links in a normal answer.
+    Only provide a link or URL when the user explicitly asks
+    for a link, URL, website, source, official website, or
+    similar information.
+
+16. Search evidence may be used internally to answer the
+    question accurately, but do not expose search-result URLs
+    or unnecessary source information unless the user asks
+    for them.
+
+17. Never turn a simple place-name or identification question
+    into a full location report. If the user asks for the name
+    of a place, answer with the name first and keep the answer
+    concise.
+    18. Never use citation markers, bracketed source names, source labels,
+    Wikipedia-style references, or search-result citation notation in
+    the answer unless the user explicitly asks for sources.
+""".strip()
 
 
 # ============================================================
@@ -100,9 +194,23 @@ def _build_messages(
     ]
 
     for item in cleaned_history:
+        role = item.get("role")
+        content = item.get("content", "")
+
+        if role not in ("user", "assistant"):
+            continue
+
+        if not isinstance(content, str):
+            continue
+
+        content = content.strip()
+
+        if not content:
+            continue
+
         messages.append({
-            "role": item["role"],
-            "content": item["content"][:MAX_MESSAGE_LENGTH],
+            "role": role,
+            "content": content[:MAX_MESSAGE_LENGTH],
         })
 
     messages.append({
@@ -112,6 +220,10 @@ def _build_messages(
 
     return messages
 
+
+# ============================================================
+# HTTP REQUEST HELPER
+# ============================================================
 
 def _post_json(
     url: str,
@@ -132,12 +244,14 @@ def _post_json(
             json=payload,
             timeout=timeout,
         )
+
     except requests.RequestException as exc:
         logger.warning(
             "%s network request failed (%s)",
             provider_name,
             type(exc).__name__,
         )
+
         raise RuntimeError(
             f"{provider_name} network request failed"
         ) from exc
@@ -148,6 +262,7 @@ def _post_json(
             provider_name,
             response.status_code,
         )
+
         raise RuntimeError(
             f"{provider_name} API request failed "
             f"(HTTP {response.status_code})"
@@ -155,6 +270,7 @@ def _post_json(
 
     try:
         data = response.json()
+
     except ValueError as exc:
         raise RuntimeError(
             f"{provider_name} returned invalid JSON"
@@ -172,26 +288,36 @@ def _post_json(
 # OPENAI-COMPATIBLE RESPONSE EXTRACTION
 # ============================================================
 
-def _extract_openai_answer(data: dict[str, Any]) -> str:
+def _extract_openai_answer(
+    data: dict[str, Any],
+) -> str:
     """Extract a text answer from an OpenAI-compatible response."""
 
     if not isinstance(data, dict):
-        raise RuntimeError("Provider returned an invalid response")
+        raise RuntimeError(
+            "Provider returned an invalid response"
+        )
 
     choices = data.get("choices")
 
     if not isinstance(choices, list) or not choices:
-        raise RuntimeError("Provider returned no answer")
+        raise RuntimeError(
+            "Provider returned no answer"
+        )
 
     choice = choices[0]
 
     if not isinstance(choice, dict):
-        raise RuntimeError("Provider returned an invalid choice")
+        raise RuntimeError(
+            "Provider returned an invalid choice"
+        )
 
     message = choice.get("message", {})
 
     if not isinstance(message, dict):
-        raise RuntimeError("Provider returned an invalid message")
+        raise RuntimeError(
+            "Provider returned an invalid message"
+        )
 
     answer = message.get("content", "")
 
@@ -216,7 +342,9 @@ def _extract_openai_answer(data: dict[str, Any]) -> str:
         answer = ""
 
     if not answer:
-        raise RuntimeError("Provider returned an empty answer")
+        raise RuntimeError(
+            "Provider returned an empty answer"
+        )
 
     return answer
 
@@ -234,7 +362,14 @@ def ask_groq(
     """Ask Groq and return its text response."""
 
     if not GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY is not configured")
+        raise RuntimeError(
+            "GROQ_API_KEY is not configured"
+        )
+
+    messages = _build_messages(
+        question,
+        history,
+    )
 
     data = _post_json(
         GROQ_URL,
@@ -244,8 +379,8 @@ def ask_groq(
         },
         payload={
             "model": model or DEFAULT_GROQ_MODEL,
-            "messages": _build_messages(question, history),
-            "temperature": 0.3,
+            "messages": messages,
+            "temperature": 0.2,
         },
         timeout=timeout,
         provider_name="Groq",
@@ -280,6 +415,11 @@ def ask_cloudflare(
         f"{CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions"
     )
 
+    messages = _build_messages(
+        question,
+        history,
+    )
+
     data = _post_json(
         url,
         headers={
@@ -288,8 +428,8 @@ def ask_cloudflare(
         },
         payload={
             "model": CLOUDFLARE_MODEL,
-            "messages": _build_messages(question, history),
-            "temperature": 0.3,
+            "messages": messages,
+            "temperature": 0.2,
         },
         timeout=timeout,
         provider_name="Cloudflare",
@@ -298,7 +438,7 @@ def ask_cloudflare(
     if isinstance(data.get("choices"), list):
         return _extract_openai_answer(data)
 
-    # Also support the native Workers AI response format.
+    # Native Workers AI response format.
     result = data.get("result")
 
     if isinstance(result, dict):
@@ -307,17 +447,19 @@ def ask_cloudflare(
         if isinstance(answer, str) and answer.strip():
             return answer.strip()
 
-    raise RuntimeError("Cloudflare returned no usable answer")
+    raise RuntimeError(
+        "Cloudflare returned no usable answer"
+    )
 
 
 # ============================================================
-# GEMINI — FALLBACK 2
+# GEMINI
 # ============================================================
 
 def _prepare_gemini_contents(
     messages: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
-    """Convert messages and merge consecutive Gemini roles."""
+    """Convert messages to Gemini format."""
 
     contents: list[dict[str, Any]] = []
 
@@ -333,15 +475,24 @@ def _prepare_gemini_contents(
         if not content:
             continue
 
-        # Gemini expects alternating user/model turns.
         if contents and contents[-1]["role"] == role:
-            previous_parts = contents[-1]["parts"]
-            previous_parts.append({"text": content})
+            contents[-1]["parts"].append({
+                "text": content
+            })
+
         else:
             contents.append({
                 "role": role,
-                "parts": [{"text": content}],
+                "parts": [
+                    {
+                        "text": content
+                    }
+                ],
             })
+
+    # Gemini expects the conversation to start with a user message.
+    while contents and contents[0]["role"] != "user":
+        contents.pop(0)
 
     return contents
 
@@ -354,14 +505,23 @@ def ask_gemini(
     """Ask Gemini using the generateContent REST API."""
 
     if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
+        raise RuntimeError(
+            "GEMINI_API_KEY is not configured"
+        )
 
-    messages = _build_messages(question, history)
+    messages = _build_messages(
+        question,
+        history,
+    )
 
-    contents = _prepare_gemini_contents(messages)
+    contents = _prepare_gemini_contents(
+        messages
+    )
 
     if not contents:
-        raise RuntimeError("No Gemini message content available")
+        raise RuntimeError(
+            "No Gemini message content available"
+        )
 
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -370,15 +530,23 @@ def ask_gemini(
 
     data = _post_json(
         url,
-        params={"key": GEMINI_API_KEY},
-        headers={"Content-Type": "application/json"},
+        params={
+            "key": GEMINI_API_KEY
+        },
+        headers={
+            "Content-Type": "application/json"
+        },
         payload={
             "systemInstruction": {
-                "parts": [{"text": messages[0]["content"]}]
+                "parts": [
+                    {
+                        "text": messages[0]["content"]
+                    }
+                ]
             },
             "contents": contents,
             "generationConfig": {
-                "temperature": 0.3,
+                "temperature": 0.2,
             },
         },
         timeout=timeout,
@@ -388,22 +556,36 @@ def ask_gemini(
     candidates = data.get("candidates")
 
     if not isinstance(candidates, list) or not candidates:
-        raise RuntimeError("Gemini returned no answer")
+        raise RuntimeError(
+            "Gemini returned no answer"
+        )
 
     candidate = candidates[0]
 
     if not isinstance(candidate, dict):
-        raise RuntimeError("Gemini returned an invalid candidate")
+        raise RuntimeError(
+            "Gemini returned an invalid candidate"
+        )
 
-    content = candidate.get("content", {})
+    content = candidate.get(
+        "content",
+        {}
+    )
 
     if not isinstance(content, dict):
-        raise RuntimeError("Gemini returned invalid content")
+        raise RuntimeError(
+            "Gemini returned invalid content"
+        )
 
-    parts = content.get("parts", [])
+    parts = content.get(
+        "parts",
+        []
+    )
 
     if not isinstance(parts, list):
-        raise RuntimeError("Gemini returned invalid answer parts")
+        raise RuntimeError(
+            "Gemini returned invalid answer parts"
+        )
 
     answer_parts = []
 
@@ -416,17 +598,25 @@ def ask_gemini(
         if isinstance(text_part, str):
             answer_parts.append(text_part)
 
-    answer = "".join(answer_parts).strip()
+    answer = "".join(
+        answer_parts
+    ).strip()
 
     if not answer:
-        feedback = data.get("promptFeedback", {})
+        feedback = data.get(
+            "promptFeedback",
+            {}
+        )
 
-        if isinstance(feedback, dict) and feedback.get(
-            "blockReason"
-        ):
-            raise RuntimeError("Gemini blocked the prompt")
+        if isinstance(feedback, dict):
+            if feedback.get("blockReason"):
+                raise RuntimeError(
+                    "Gemini blocked the prompt"
+                )
 
-        raise RuntimeError("Gemini returned an empty answer")
+        raise RuntimeError(
+            "Gemini returned an empty answer"
+        )
 
     return answer
 
@@ -439,10 +629,13 @@ def get_ai_answer(
     question: str,
     history: Optional[list[dict]] = None,
 ) -> str:
-    """Try Groq first, then Cloudflare, then Gemini."""
+    """Try available AI providers with temporary failure cooldown."""
 
-    # Validate the input before contacting any provider.
-    _build_messages(question, history)
+    # Validate the input before contacting providers.
+    _build_messages(
+        question,
+        history,
+    )
 
     providers = [
         ("Groq", ask_groq),
@@ -452,27 +645,106 @@ def get_ai_answer(
 
     errors = []
 
+    now = time.monotonic()
+
     for name, provider in providers:
+
+        # ----------------------------------------------------
+        # Skip a provider if it recently returned a temporary
+        # rate-limit or service-unavailable error.
+        # ----------------------------------------------------
+        cooldown_until = _provider_cooldowns.get(
+            name,
+            0,
+        )
+
+        if cooldown_until > now:
+            remaining = int(
+                cooldown_until - now
+            ) + 1
+
+            logger.info(
+                "%s is temporarily on cooldown "
+                "(%ss remaining)",
+                name,
+                remaining,
+            )
+
+            errors.append(
+                f"{name}: cooldown"
+            )
+
+            continue
+
         try:
-            answer = provider(question, history)
+            answer = provider(
+                question,
+                history,
+            )
 
-            if isinstance(answer, str) and answer.strip():
-                logger.info("%s generated an answer", name)
-                return answer.strip()
+            if isinstance(answer, str):
+                answer = answer.strip()
 
-            errors.append(f"{name}: empty response")
+            if answer:
+                # Provider is healthy again.
+                _provider_cooldowns.pop(
+                    name,
+                    None,
+                )
+
+                logger.info(
+                    "%s generated an answer",
+                    name,
+                )
+
+                return answer
+
+            errors.append(
+                f"{name}: empty response"
+            )
 
         except Exception as exc:
-            # Avoid logging API keys, request headers, or user content.
+            error_text = str(exc).lower()
+
+            # ------------------------------------------------
+            # Temporary failures:
+            # 429 = rate limit
+            # 503 = service unavailable
+            # ------------------------------------------------
+            temporary_failure = (
+                "429" in error_text
+                or "503" in error_text
+                or "rate limit" in error_text
+                or "too many requests" in error_text
+                or "temporarily unavailable" in error_text
+                or "service unavailable" in error_text
+            )
+
+            if temporary_failure:
+                _provider_cooldowns[name] = (
+                    time.monotonic()
+                    + PROVIDER_COOLDOWN_SECONDS
+                )
+
+                logger.warning(
+                    "%s temporarily unavailable; "
+                    "cooling down for %ss",
+                    name,
+                    PROVIDER_COOLDOWN_SECONDS,
+                )
+
             logger.warning(
                 "%s provider failed (%s)",
                 name,
                 type(exc).__name__,
             )
-            errors.append(f"{name}: {type(exc).__name__}")
 
+            errors.append(
+                f"{name}: {type(exc).__name__}"
+            )
+
+    # All currently available providers failed.
     raise RuntimeError(
-        "All AI providers failed. Check API keys, model availability, "
-        "account limits, and network connectivity. "
+        "All AI providers failed. "
         + "; ".join(errors)
     )

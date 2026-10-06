@@ -1,12 +1,31 @@
-"""Safe arithmetic service for Hello AI."""
+# core/services/math_service.py
+
+from __future__ import annotations
 
 import ast
 import math
 import operator
-import re
+from typing import Union
 
 
-BINARY_OPERATORS = {
+Number = Union[int, float]
+
+
+# ============================================================
+# LIMITS
+# ============================================================
+
+MAX_EXPRESSION_LENGTH = 200
+MAX_AST_NODES = 100
+MAX_ABS_VALUE = 1e100
+MAX_EXPONENT = 100
+
+
+# ============================================================
+# ALLOWED OPERATORS
+# ============================================================
+
+_BINARY_OPERATORS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
@@ -16,99 +35,169 @@ BINARY_OPERATORS = {
     ast.Pow: operator.pow,
 }
 
-UNARY_OPERATORS = {
+_UNARY_OPERATORS = {
     ast.UAdd: operator.pos,
     ast.USub: operator.neg,
 }
 
-MAX_EXPRESSION_LENGTH = 200
-MAX_ABS_VALUE = 10**100
-MAX_EXPONENT = 100
-MAX_AST_NODES = 100
 
+# ============================================================
+# VALIDATION
+# ============================================================
 
-def _check_number(value):
-    """Reject non-finite or excessively large numeric values."""
+def _is_valid_number(value: object) -> bool:
+    """
+    শুধুমাত্র int/float গ্রহণ করে।
+    bool-কে number হিসেবে গ্রহণ করা হবে না।
+    """
 
     if isinstance(value, bool):
-        raise ValueError("Boolean values are not allowed")
+        return False
 
     if not isinstance(value, (int, float)):
-        raise ValueError("Only numeric results are allowed")
+        return False
 
     if isinstance(value, float) and not math.isfinite(value):
-        raise ValueError("Result must be finite")
+        return False
+
+    return True
+
+
+def _check_value(value: Number) -> Number:
+    """
+    Calculation result-এর size এবং validity check করে।
+    """
+
+    if not _is_valid_number(value):
+        raise ValueError("Invalid numeric value")
 
     if abs(value) > MAX_ABS_VALUE:
-        raise ValueError("Number is too large")
+        raise ValueError("Result is too large")
+
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("Result is not finite")
 
     return value
 
 
-def _evaluate(node):
-    """Evaluate only explicitly permitted arithmetic syntax."""
+def _count_nodes(tree: ast.AST) -> int:
+    count = 0
+
+    for _ in ast.walk(tree):
+        count += 1
+
+        if count > MAX_AST_NODES:
+            raise ValueError("Expression is too complex")
+
+    return count
+
+
+# ============================================================
+# SAFE EVALUATOR
+# ============================================================
+
+def _evaluate(node: ast.AST) -> Number:
+    """
+    AST node safely evaluate করে।
+
+    eval() ব্যবহার করা হচ্ছে না।
+    """
+
+    # --------------------------------------------------------
+    # NUMBER
+    # --------------------------------------------------------
 
     if isinstance(node, ast.Constant):
-        if isinstance(node.value, bool):
-            raise ValueError("Boolean values are not allowed")
+        value = node.value
 
-        if isinstance(node.value, (int, float)):
-            return _check_number(node.value)
+        if not _is_valid_number(value):
+            raise ValueError("Only numeric constants are allowed")
 
-        raise ValueError("Only numbers are allowed")
+        return _check_value(value)
+
+    # --------------------------------------------------------
+    # UNARY + / -
+    # --------------------------------------------------------
+
+    if isinstance(node, ast.UnaryOp):
+        operator_function = _UNARY_OPERATORS.get(type(node.op))
+
+        if operator_function is None:
+            raise ValueError("Unsupported unary operator")
+
+        operand = _evaluate(node.operand)
+
+        try:
+            result = operator_function(operand)
+        except Exception as exc:
+            raise ValueError("Invalid unary operation") from exc
+
+        return _check_value(result)
+
+    # --------------------------------------------------------
+    # BINARY OPERATIONS
+    # --------------------------------------------------------
 
     if isinstance(node, ast.BinOp):
-        operation = BINARY_OPERATORS.get(type(node.op))
+        operator_function = _BINARY_OPERATORS.get(type(node.op))
 
-        if operation is None:
-            raise ValueError("Operator is not allowed")
+        if operator_function is None:
+            raise ValueError("Unsupported operator")
 
         left = _evaluate(node.left)
         right = _evaluate(node.right)
+
+        # ----------------------------------------------------
+        # POWER LIMIT
+        # ----------------------------------------------------
 
         if isinstance(node.op, ast.Pow):
             if abs(right) > MAX_EXPONENT:
                 raise ValueError("Exponent is too large")
 
-            if isinstance(left, int) and isinstance(right, int):
-                if right > 0 and abs(left) > 1:
-                    # Check the approximate result size before
-                    # calculating a potentially enormous power.
-                    if left.bit_length() * right > 400:
-                        raise ValueError("Result is too large")
+            if right > 0 and abs(left) > 1 and right > MAX_EXPONENT:
+                raise ValueError("Power operation is too large")
 
-        if isinstance(node.op, ast.Mult):
-            if left != 0 and right != 0:
-                if abs(left) > MAX_ABS_VALUE / abs(right):
-                    raise ValueError("Result is too large")
+        # ----------------------------------------------------
+        # DIVISION / FLOOR DIVISION / MODULO
+        # ----------------------------------------------------
 
-        if isinstance(node.op, (ast.Div, ast.FloorDiv, ast.Mod)):
+        if isinstance(
+            node.op,
+            (ast.Div, ast.FloorDiv, ast.Mod),
+        ):
             if right == 0:
-                raise ValueError("Division by zero")
+                raise ZeroDivisionError("Division by zero")
+
+        # ----------------------------------------------------
+        # CALCULATE
+        # ----------------------------------------------------
 
         try:
-            result = operation(left, right)
-        except (OverflowError, ZeroDivisionError) as exc:
-            raise ValueError("Invalid arithmetic operation") from exc
+            result = operator_function(left, right)
 
-        if isinstance(result, complex):
-            raise ValueError("Complex results are not supported")
+        except ZeroDivisionError:
+            raise
 
-        return _check_number(result)
+        except OverflowError as exc:
+            raise ValueError("Result is too large") from exc
 
-    if isinstance(node, ast.UnaryOp):
-        operation = UNARY_OPERATORS.get(type(node.op))
+        except Exception as exc:
+            raise ValueError("Invalid calculation") from exc
 
-        if operation is None:
-            raise ValueError("Unary operator is not allowed")
+        return _check_value(result)
 
-        return _check_number(operation(_evaluate(node.operand)))
-
-    raise ValueError("Expression contains unsupported syntax")
+    raise ValueError("Unsupported expression")
 
 
-def calculate(expression: str):
-    """Calculate a basic arithmetic expression safely."""
+# ============================================================
+# EXPRESSION PARSING
+# ============================================================
+
+def _validate_expression_text(expression: str) -> str:
+    """
+    Expression text basic validation।
+    """
 
     if not isinstance(expression, str):
         raise ValueError("Expression must be text")
@@ -121,21 +210,114 @@ def calculate(expression: str):
     if len(expression) > MAX_EXPRESSION_LENGTH:
         raise ValueError("Expression is too long")
 
-    if not re.fullmatch(r"[0-9+\-*/%().\s]+", expression):
-        raise ValueError("Expression contains unsupported characters")
+    # Only mathematical characters.
+    if not all(
+        char.isdigit()
+        or char in "+-*/%(). "
+        for char in expression
+    ):
+        raise ValueError("Invalid characters in expression")
+
+    if not any(char.isdigit() for char in expression):
+        raise ValueError("No number found")
+
+    return expression
+
+
+def _parse_expression(expression: str) -> ast.Expression:
+    """
+    Expression → AST।
+    """
 
     try:
         tree = ast.parse(expression, mode="eval")
 
-        if sum(1 for _ in ast.walk(tree)) > MAX_AST_NODES:
-            raise ValueError("Expression is too complex")
+    except (SyntaxError, ValueError, TypeError) as exc:
+        raise ValueError(
+            "Invalid mathematical expression"
+        ) from exc
 
+    if not isinstance(tree, ast.Expression):
+        raise ValueError("Invalid expression")
+
+    _count_nodes(tree)
+
+    return tree
+
+
+# ============================================================
+# RESULT FORMATTING
+# ============================================================
+
+def _format_result(value: Number) -> Number:
+    """
+    5.0 → 5
+    5.25 → 5.25
+
+    Fractional result কখনো silently round করা হবে না।
+    """
+
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("Result is not finite")
+
+        # Exact integer-valued float।
+        if value.is_integer():
+            return int(value)
+
+    return value
+
+
+# ============================================================
+# PUBLIC CALCULATOR
+# ============================================================
+
+def calculate(expression: str) -> Number:
+    """
+    Safe mathematical calculator।
+
+    Examples:
+        calculate("2 + 3")
+        calculate("(10 + 5) * 2")
+        calculate("10 / 4")
+
+    Raises:
+        ValueError
+    """
+
+    expression = _validate_expression_text(expression)
+
+    tree = _parse_expression(expression)
+
+    try:
         result = _evaluate(tree.body)
 
-    except (SyntaxError, OverflowError, RecursionError) as exc:
-        raise ValueError("Invalid arithmetic expression") from exc
+    except ZeroDivisionError as exc:
+        # Public API-তে traceback না দেখিয়ে
+        # একটি সাধারণ ValueError দেওয়া হবে।
+        raise ValueError("Cannot divide by zero") from None
 
-    if isinstance(result, float) and result.is_integer():
-        return int(result)
+    return _format_result(result)
 
-    return result
+
+# ============================================================
+# PUBLIC VALIDATION HELPER
+# ============================================================
+
+def is_math_expression(expression: str) -> bool:
+    """
+    Expression valid mathematical expression কি না।
+    """
+
+    try:
+        calculate(expression)
+        return True
+
+    except Exception:
+        return False
+
+
+__all__ = [
+    "calculate",
+    "is_math_expression",
+]
