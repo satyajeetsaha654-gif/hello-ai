@@ -62,13 +62,6 @@ def _collapse_excessive_blank_lines(text: str) -> str:
 def _has_repeated_characters(text: str, threshold: int = 12) -> bool:
     """
     একই character অস্বাভাবিকভাবে repeated হয়েছে কি না।
-
-    যেমন:
-        এএএএএএএএএএএএএ
-        ..............
-        !!!!!!!!!
-
-    সাধারণ Bengali/English sentence-এ এমন repetition থাকার কথা নয়।
     """
 
     if not text:
@@ -117,13 +110,6 @@ def _normalise_token_for_comparison(token: str) -> str:
 def _has_pathological_token_repetition(text: str) -> bool:
     """
     একটি ছোট token অস্বাভাবিকভাবে বারবার এসেছে কি না।
-
-    উদাহরণ:
-        এ এ এ এ এ এ এ এ এ এ
-        the the the the the ...
-
-    স্বাভাবিক sentence-এ একই word 10+ বার পরপর আসা
-    প্রায় সবসময় malformed generation-এর লক্ষণ।
     """
 
     tokens = re.findall(
@@ -224,21 +210,16 @@ def _remove_accidental_wrappers(text: str) -> str:
     """
     কিছু provider মাঝে মাঝে response-এর চারপাশে unnecessary
     triple backticks বা quotes বসাতে পারে।
-
-    কিন্তু legitimate Markdown code block নষ্ট না করার জন্য
-    শুধুমাত্র পুরো response wrapper হলে সরানো হয়।
     """
 
     value = text.strip()
 
-    # পুরো response যদি ``` দিয়ে শুরু/শেষ হয়।
     if value.startswith("```") and value.endswith("```"):
         lines = value.splitlines()
 
         if len(lines) >= 2:
             first = lines[0].strip()
 
-            # ```python / ```text / ```json ইত্যাদি opening marker।
             if first.startswith("```"):
                 lines = lines[1:]
 
@@ -276,7 +257,14 @@ def _remove_leading_assistant_labels(text: str) -> str:
 
 
 def _user_wants_links(question: str) -> bool:
-    """User explicitly asked for a link, URL, website, or source কি না."""
+    """
+    User explicitly link / URL / website / source চাইছে কি না।
+
+    গুরুত্বপূর্ণ:
+    সাধারণ কথোপকথনে link allow করা হবে না।
+    শুধুমাত্র user-এর প্রশ্নে explicit link intent থাকলে
+    AI response-এর URL রাখা হবে।
+    """
 
     if not isinstance(question, str):
         return False
@@ -284,6 +272,7 @@ def _user_wants_links(question: str) -> bool:
     q = question.casefold().strip()
 
     patterns = (
+        # Bengali — general
         "লিংক দাও",
         "লিংকটা দাও",
         "লিংক দিন",
@@ -306,6 +295,37 @@ def _user_wants_links(question: str) -> bool:
         "সোর্স দেখাও",
         "অফিশিয়াল লিংক",
         "অফিসিয়াল লিংক",
+
+        # Bengali — movie / film / video / YouTube
+        "মুভির লিংক",
+        "মুভিটার লিংক",
+        "মুভি লিংক",
+        "সিনেমার লিংক",
+        "সিনেমাটা লিংক",
+        "সিনেমার লিংক দাও",
+        "এই মুভির লিংক",
+        "এই মুভিটার লিংক",
+        "এই সিনেমার লিংক",
+        "ইউটিউব লিংক",
+        "ইউটিউব থেকে লিংক",
+        "ইউটিউবের লিংক",
+        "ভিডিওর লিংক",
+        "ভিডিও লিংক",
+        "এই ভিডিওর লিংক",
+
+        # Bengali — news
+        "খবরের লিংক",
+        "খবরটা লিংক",
+        "খবরটির লিংক",
+        "নিউজের লিংক",
+        "নিউজটা লিংক",
+        "এই খবরের লিংক",
+        "এই খবরটার লিংক",
+        "এই খবরটির লিংক",
+        "এই নিউজের লিংক",
+        "এই নিউজটার লিংক",
+
+        # English — general
         "official link",
         "give me the link",
         "send me the link",
@@ -314,6 +334,38 @@ def _user_wants_links(question: str) -> bool:
         "website link",
         "official website",
         "source link",
+
+        # English — movie / film / video / YouTube
+        "movie link",
+        "film link",
+        "youtube link",
+        "youtube url",
+        "youtube video link",
+        "video link",
+        "link to this movie",
+        "link for this movie",
+        "link to the movie",
+        "link to this film",
+        "link to this video",
+
+        # English — news
+        "news link",
+        "link to this news",
+        "link to the news",
+        "link to this story",
+        "link to this article",
+
+        # Hindi
+        "लिंक दो",
+        "लिंक चाहिए",
+        "लिंक भेजो",
+        "यूट्यूब लिंक",
+        "यूट्यूब से लिंक",
+        "फिल्म का लिंक",
+        "मूवी का लिंक",
+        "वीडियो का लिंक",
+        "खबर का लिंक",
+        "न्यूज़ का लिंक",
     )
 
     return any(pattern in q for pattern in patterns)
@@ -412,7 +464,6 @@ def clean_response(
     if len(value) > max_length:
         value = value[:max_length].rstrip()
 
-        # মাঝখানে word ভেঙে না দেওয়ার চেষ্টা।
         if " " in value:
             value = value.rsplit(" ", 1)[0].rstrip()
 
@@ -521,13 +572,21 @@ def fallback_response(
 def safe_response(
     response: Optional[str],
     language: str = "en",
+    *,
+    question: str = "",
 ) -> str:
     """
     Response clean করার পরে empty/malformed হলে
     appropriate fallback দেয়।
+
+    question optional রাখা হয়েছে যাতে explicit link request
+    হলে safe_response() থেকেও requested links preserve হয়।
     """
 
-    cleaned = clean_response(response)
+    cleaned = clean_response(
+        response,
+        question=question,
+    )
 
     if cleaned:
         return cleaned

@@ -171,6 +171,61 @@ FUTURE_PATTERNS = [
 
 
 # ============================================================
+# MEDIA / LINK PATTERNS
+# ============================================================
+
+MEDIA_LINK_PATTERNS = [
+    "youtube",
+    "you tube",
+    "video",
+    "movie",
+    "film",
+    "song",
+
+    "ইউটিউব",
+    "ভিডিও",
+    "মুভি",
+    "সিনেমা",
+    "ছবি",
+    "গান",
+
+    "यूट्यूब",
+    "वीडियो",
+    "मूवी",
+    "फिल्म",
+    "गाना",
+]
+
+
+EXPLICIT_LINK_PATTERNS = [
+    "link",
+    "url",
+    "লিংক",
+    "ইউআরএল",
+    "url দাও",
+    "लिंक",
+    "यूआरएल",
+]
+
+
+# ============================================================
+# NEWS SOURCE PRIORITY
+# ============================================================
+
+PREFERRED_NEWS_DOMAINS = {
+    "bengali.abplive.com": 1.00,
+    "abplive.com": 0.95,
+    "ndtv.com": 0.90,
+    "indianexpress.com": 0.90,
+    "hindustantimes.com": 0.88,
+    "thehindu.com": 0.88,
+    "indiatoday.in": 0.86,
+    "news18.com": 0.84,
+    "timesofindia.indiatimes.com": 0.82,
+}
+
+
+# ============================================================
 # ENTITY ALIASES
 # ============================================================
 
@@ -384,6 +439,136 @@ def _is_future_query(query):
     )
 
 
+def _is_media_link_query(query):
+    """
+    True only when the user is explicitly asking for a media
+    link or URL.
+
+    This is intentionally narrow so normal conversation does
+    not start returning links.
+    """
+
+    text = _safe_text(query).lower()
+
+    has_media = any(
+        pattern in text
+        for pattern in MEDIA_LINK_PATTERNS
+    )
+
+    has_link_request = any(
+        pattern in text
+        for pattern in EXPLICIT_LINK_PATTERNS
+    )
+
+    return has_media and has_link_request
+
+
+def _is_youtube_link_query(query):
+    text = _safe_text(query).lower()
+
+    youtube_requested = (
+        "youtube" in text
+        or "ইউটিউব" in text
+        or "यूट्यूब" in text
+    )
+
+    return youtube_requested and _is_media_link_query(query)
+
+
+# ============================================================
+# PUBLIC LINK / MEDIA HELPERS
+# ============================================================
+
+def is_explicit_link_request(query):
+    text = _safe_text(query).lower()
+
+    return any(
+        pattern in text
+        for pattern in EXPLICIT_LINK_PATTERNS
+    )
+
+
+def is_news_query(query):
+    return _is_news_query(query)
+
+
+def is_media_link_query(query):
+    return _is_media_link_query(query)
+
+
+def is_youtube_link_query(query):
+    return _is_youtube_link_query(query)
+
+
+def _clean_media_search_query(query):
+    """
+    Remove request words such as 'link', 'URL', 'YouTube',
+    'দাও' etc. from an explicit media-link request.
+
+    The actual media title should remain as the main search query.
+    """
+
+    text = _safe_text(query)
+
+    patterns = [
+        r"(?i)\bplease\b",
+        r"(?i)\bcan you\b",
+        r"(?i)\bcould you\b",
+        r"(?i)\bgive me\b",
+        r"(?i)\bshow me\b",
+        r"(?i)\bfind\b",
+        r"(?i)\bthe link\b",
+        r"(?i)\blink\b",
+        r"(?i)\burl\b",
+        r"(?i)\byoutube\b",
+        r"(?i)\byou tube\b",
+
+        r"ইউটিউব",
+        r"লিংক",
+        r"লিঙ্ক",
+        r"ইউআরএল",
+        r"দাও",
+        r"দিয়ে দাও",
+        r"দিয়ে দাও",
+        r"চাই",
+        r"দেখাও",
+
+        r"लिंक",
+        r"यूआरएल",
+        r"यूट्यूब",
+        r"दो",
+        r"दिखाओ",
+    ]
+
+    for pattern in patterns:
+        text = re.sub(
+            pattern,
+            " ",
+            text,
+        )
+
+    return _normalise_spaces(text)
+
+
+def _preferred_news_domain_score(url):
+    domain = _domain_from_url(url)
+
+    if not domain:
+        return 0.0
+
+    best = 0.0
+
+    for preferred, score in PREFERRED_NEWS_DOMAINS.items():
+        if domain == preferred or domain.endswith("." + preferred):
+            best = max(best, score)
+
+    return best
+
+
+def _is_preferred_news_source(url):
+    return _preferred_news_domain_score(url) > 0.0
+
+
 def _detect_query_entities(query):
     text = _safe_text(query).lower()
     found = []
@@ -402,12 +587,17 @@ def _entity_alias_present(entity, text):
 
     aliases = ENTITY_ALIASES.get(entity, [])
 
-    return any(alias.lower() in text for alias in aliases)
+    return any(
+        alias.lower() in text
+        for alias in aliases
+    )
 
 
 def _domain_from_url(url):
     try:
-        domain = urlparse(_safe_text(url)).netloc.lower()
+        domain = urlparse(
+            _safe_text(url)
+        ).netloc.lower()
 
         if domain.startswith("www."):
             domain = domain[4:]
@@ -448,8 +638,14 @@ def _source_quality(url):
     if not domain:
         return 0.20
 
+    # Explicit media searches are handled separately in ranking.
     if _is_low_value_url(url):
         return 0.05
+
+    preferred_news_score = _preferred_news_domain_score(url)
+
+    if preferred_news_score:
+        return max(0.60, preferred_news_score)
 
     if domain.endswith(".gov") or ".gov." in domain:
         return 1.00
@@ -493,7 +689,11 @@ def _title_score(title, query):
 
     query_words = [
         word
-        for word in re.findall(r"\w+", query, flags=re.UNICODE)
+        for word in re.findall(
+            r"\w+",
+            query,
+            flags=re.UNICODE
+        )
         if len(word) >= 3
     ]
 
@@ -501,11 +701,18 @@ def _title_score(title, query):
         return 0.0
 
     matched = sum(
-        1 for word in query_words
+        1
+        for word in query_words
         if word in title
     )
 
-    return min(1.0, matched / max(1, min(len(query_words), 8)))
+    return min(
+        1.0,
+        matched / max(
+            1,
+            min(len(query_words), 8)
+        )
+    )
 
 
 def _keyword_relevance(title, content, query):
@@ -515,7 +722,11 @@ def _keyword_relevance(title, content, query):
 
     query_words = [
         word
-        for word in re.findall(r"\w+", query, flags=re.UNICODE)
+        for word in re.findall(
+            r"\w+",
+            query,
+            flags=re.UNICODE
+        )
         if len(word) >= 3
     ]
 
@@ -531,11 +742,21 @@ def _keyword_relevance(title, content, query):
         elif word in content:
             content_hits += 1
 
-    total = min(len(query_words), 10)
+    total = min(
+        len(query_words),
+        10
+    )
 
     return min(
         1.0,
-        ((title_hits * 2.0) + content_hits) / max(1.0, total * 2.0)
+        (
+            (title_hits * 2.0)
+            + content_hits
+        )
+        / max(
+            1.0,
+            total * 2.0
+        )
     )
 
 
@@ -567,11 +788,17 @@ def _year_presence_score(years, title, content):
         else:
             score_values.append(0.0)
 
-    return max(score_values) if score_values else 0.0
+    return max(
+        score_values
+    ) if score_values else 0.0
 
 
 def _year_match_count(years, title, content):
-    text = _safe_text(title) + " " + _safe_text(content)
+    text = (
+        _safe_text(title)
+        + " "
+        + _safe_text(content)
+    )
 
     count = 0
 
@@ -590,11 +817,6 @@ def _competing_year_penalty(years, title, content):
     """
     Prevent a result from ranking highly just because it mentions
     the requested year once while actually focusing on another year.
-
-    Example:
-        Query: 1947 India
-        Article: mostly about 1937 Burma partition,
-        with 1947 mentioned only as a comparison.
     """
 
     if not years:
@@ -627,13 +849,21 @@ def _competing_year_penalty(years, title, content):
 
     for year, count in all_years.items():
         if year not in years:
-            competing = max(competing, count)
+            competing = max(
+                competing,
+                count
+            )
 
     if competing <= requested_count:
         return 0.0
 
-    # Strong penalty when another year dominates.
-    ratio = competing / max(1, requested_count)
+    ratio = (
+        competing
+        / max(
+            1,
+            requested_count
+        )
+    )
 
     if ratio >= 5:
         return 0.35
@@ -677,7 +907,15 @@ def _year_focus_score(years, title, content):
 
     return max(
         0.0,
-        min(1.0, presence + min(0.25, requested_count * 0.02) - penalty)
+        min(
+            1.0,
+            presence
+            + min(
+                0.25,
+                requested_count * 0.02
+            )
+            - penalty
+        )
     )
 
 
@@ -714,19 +952,28 @@ def _entity_relevance_score(entities, title, content):
         else:
             scores.append(0.0)
 
-    return max(scores) if scores else 0.0
+    return max(
+        scores
+    ) if scores else 0.0
 
 
 def _entity_match_count(entities, title, content):
     if not entities:
         return 0
 
-    text = _safe_text(title) + " " + _safe_text(content)
+    text = (
+        _safe_text(title)
+        + " "
+        + _safe_text(content)
+    )
 
     return sum(
         1
         for entity in entities
-        if _entity_alias_present(entity, text)
+        if _entity_alias_present(
+            entity,
+            text
+        )
     )
 
 
@@ -779,10 +1026,10 @@ def _topic_relevance_score(query, title, content):
 
         score += min(
             0.75,
-            title_hits * 0.25 + content_hits * 0.05
+            title_hits * 0.25
+            + content_hits * 0.05
         )
 
-    # Explicitly reward broad year-overview titles.
     broad_markers = [
         "year in",
         "important events",
@@ -799,7 +1046,7 @@ def _topic_relevance_score(query, title, content):
         "উল্লেখযোগ্য ঘটনা",
         "ঘটনাবলি",
         "ইতিহাস",
-        "घटनाएं",
+        "ঘটনाएं",
         "महत्वपूर्ण घटनाएं",
         "इतिहास",
     ]
@@ -816,7 +1063,10 @@ def _topic_relevance_score(query, title, content):
             broad_title_hits * 0.30
         )
 
-    return min(1.0, score)
+    return min(
+        1.0,
+        score
+    )
 
 
 def _narrow_result_penalty(query, title, content):
@@ -866,7 +1116,6 @@ def _narrow_result_penalty(query, title, content):
         if marker in title_lower
     )
 
-    # Stronger penalty if title itself is clearly narrow.
     if hits >= 2:
         return 0.30
 
@@ -876,7 +1125,12 @@ def _narrow_result_penalty(query, title, content):
     return 0.0
 
 
-def _future_relevance_score(query, title, content, years):
+def _future_relevance_score(
+    query,
+    title,
+    content,
+    years
+):
     if not years:
         return 0.0
 
@@ -940,15 +1194,24 @@ def _future_relevance_score(query, title, content, years):
         elif marker in text_content:
             score += 0.04
 
-    return min(1.0, score)
+    return min(
+        1.0,
+        score
+    )
 
 
 # ============================================================
 # RESULT CLEANING
 # ============================================================
 
-def _clean_result(result, requested_years=None):
-    if not isinstance(result, dict):
+def _clean_result(
+    result,
+    requested_years=None
+):
+    if not isinstance(
+        result,
+        dict
+    ):
         return None
 
     title = _normalise_spaces(
@@ -973,10 +1236,11 @@ def _clean_result(result, requested_years=None):
     if not title and not url and not content:
         return None
 
-    if not url.startswith(("http://", "https://")):
+    if not url.startswith(
+        ("http://", "https://")
+    ):
         return None
 
-    # Avoid enormous payloads.
     title = title[:500]
     content = content[:5000]
 
@@ -1005,10 +1269,16 @@ def _dedupe_results(results):
     seen_titles = set()
 
     for item in results:
-        if not isinstance(item, dict):
+        if not isinstance(
+            item,
+            dict
+        ):
             continue
 
-        url = _safe_text(item.get("url")).rstrip("/")
+        url = _safe_text(
+            item.get("url")
+        ).rstrip("/")
+
         title = _normalise_spaces(
             item.get("title", "")
         ).lower()
@@ -1036,13 +1306,60 @@ def _dedupe_results(results):
 # QUERY VARIANTS
 # ============================================================
 
-def _build_query_variants(query, entities, years):
+def _build_query_variants(
+    query,
+    entities,
+    years,
+    media_link_query=False,
+    news_query=False,
+):
     variants = []
 
     query = _clean_query(query)
 
     if query:
         variants.append(query)
+
+    # --------------------------------------------------------
+    # Explicit YouTube / media-link request.
+    #
+    # Search the actual media title first, then specifically
+    # target YouTube. Request words such as "link", "URL",
+    # "YouTube", "দাও" are removed from the media search query.
+    # --------------------------------------------------------
+
+    if media_link_query:
+        media_query = _clean_media_search_query(
+            query
+        )
+
+        if media_query:
+            variants.extend([
+                media_query,
+                f'"{media_query}" site:youtube.com/watch',
+                f'"{media_query}" site:youtube.com',
+                f'"{media_query}" site:youtu.be',
+            ])
+
+        # Do not add historical/event variants for media links.
+        return _unique_query_variants(
+            variants
+        )[:12]
+
+    # --------------------------------------------------------
+    # Current/news source targeting.
+    #
+    # The exact query remains first. Additional searches
+    # intentionally target ABP Ananda and Indian news sources.
+    # --------------------------------------------------------
+
+    if news_query:
+        variants.extend([
+            f"{query} site:bengali.abplive.com",
+            f"{query} site:ndtv.com",
+            f"{query} site:indianexpress.com",
+            f"{query} site:hindustantimes.com",
+        ])
 
     # Explicit year + entity queries.
     if years and entities:
@@ -1068,7 +1385,10 @@ def _build_query_variants(query, entities, years):
             ])
 
     # Future year.
-    if years and any(_is_future_year(y) for y in years):
+    if years and any(
+        _is_future_year(y)
+        for y in years
+    ):
         for entity in entities:
             for year in years:
                 if _is_future_year(year):
@@ -1079,7 +1399,12 @@ def _build_query_variants(query, entities, years):
                         f"{entity} {year} expected developments",
                     ])
 
-    # Remove duplicates while preserving order.
+    return _unique_query_variants(
+        variants
+    )[:12]
+
+
+def _unique_query_variants(variants):
     output = []
     seen = set()
 
@@ -1097,7 +1422,7 @@ def _build_query_variants(query, entities, years):
         seen.add(key)
         output.append(item)
 
-    return output[:12]
+    return output
 
 
 # ============================================================
@@ -1112,7 +1437,9 @@ def _tavily_search(
     time_range=None,
 ):
     if not TAVILY_API_KEY:
-        logger.warning("TAVILY_API_KEY is not configured.")
+        logger.warning(
+            "TAVILY_API_KEY is not configured."
+        )
         return []
 
     payload = {
@@ -1142,9 +1469,15 @@ def _tavily_search(
 
         data = response.json()
 
-        results = data.get("results", [])
+        results = data.get(
+            "results",
+            []
+        )
 
-        if not isinstance(results, list):
+        if not isinstance(
+            results,
+            list
+        ):
             return []
 
         return results
@@ -1180,9 +1513,20 @@ def _filter_year_entity_results(
     fallback = []
 
     for item in results:
-        title = item.get("title", "")
-        content = item.get("content", "")
-        url = item.get("url", "")
+        title = item.get(
+            "title",
+            ""
+        )
+
+        content = item.get(
+            "content",
+            ""
+        )
+
+        url = item.get(
+            "url",
+            ""
+        )
 
         year_score = _year_focus_score(
             years,
@@ -1196,23 +1540,26 @@ def _filter_year_entity_results(
             content
         )
 
-        low_value = _is_low_value_url(url)
+        low_value = _is_low_value_url(
+            url
+        )
 
-        # Explicit year + entity:
-        # require meaningful evidence whenever possible.
         if entities:
-            if year_score >= 0.65 and entity_score >= 0.60:
+            if (
+                year_score >= 0.65
+                and entity_score >= 0.60
+            ):
                 matched.append(item)
+
             elif year_score >= 0.85:
-                # Keep very strong year matches as fallback.
                 fallback.append(item)
+
         else:
             if year_score >= 0.65:
                 matched.append(item)
             else:
                 fallback.append(item)
 
-        # Never allow social/video pages into the preferred pool.
         if low_value:
             if item in matched:
                 matched.remove(item)
@@ -1220,7 +1567,6 @@ def _filter_year_entity_results(
             if item in fallback:
                 fallback.remove(item)
 
-    # Strong matched results first.
     if matched:
         return matched + fallback
 
@@ -1236,6 +1582,8 @@ def _rank_results(
     query,
     years=None,
     entities=None,
+    media_link_query=False,
+    news_query=False,
 ):
     years = years or []
     entities = entities or []
@@ -1245,9 +1593,20 @@ def _rank_results(
     year_query = bool(years)
 
     for item in results:
-        title = item.get("title", "")
-        content = item.get("content", "")
-        url = item.get("url", "")
+        title = item.get(
+            "title",
+            ""
+        )
+
+        content = item.get(
+            "content",
+            ""
+        )
+
+        url = item.get(
+            "url",
+            ""
+        )
 
         year_score = _year_focus_score(
             years,
@@ -1272,7 +1631,9 @@ def _rank_results(
             query
         )
 
-        source_score = _source_quality(url)
+        source_score = _source_quality(
+            url
+        )
 
         topic_score = _topic_relevance_score(
             query,
@@ -1311,9 +1672,48 @@ def _rank_results(
             content
         )
 
-        if year_query:
-            # Year-specific searches should be dominated by
-            # exact year focus and entity relevance.
+        # ----------------------------------------------------
+        # MEDIA LINK SEARCH
+        #
+        # For explicit YouTube/media requests, YouTube is no
+        # longer considered a low-value source. Direct video
+        # URLs are preferred over generic pages.
+        # ----------------------------------------------------
+
+        if media_link_query:
+            domain = _domain_from_url(
+                url
+            )
+
+            is_youtube = (
+                domain == "youtube.com"
+                or domain.endswith(
+                    ".youtube.com"
+                )
+                or domain == "youtu.be"
+            )
+
+            direct_video = (
+                "youtube.com/watch" in url
+                or "youtu.be/" in url
+            )
+
+            media_score = (
+                1.00
+                if direct_video
+                else 0.75
+                if is_youtube
+                else 0.10
+            )
+
+            score = (
+                media_score * 0.50
+                + keyword_score * 0.25
+                + title_score * 0.20
+                + source_score * 0.05
+            )
+
+        elif year_query:
             score = (
                 year_score * 0.34
                 + entity_score * 0.24
@@ -1329,6 +1729,15 @@ def _rank_results(
             )
 
         else:
+            # News queries get an additional boost for preferred
+            # Indian news sources.
+            preferred_news_bonus = (
+                _preferred_news_domain_score(url)
+                * 0.20
+                if news_query
+                else 0.0
+            )
+
             score = (
                 keyword_score * 0.35
                 + title_score * 0.20
@@ -1336,18 +1745,33 @@ def _rank_results(
                 + source_score * 0.15
                 + entity_score * 0.10
                 + future_score * 0.05
+                + preferred_news_bonus
                 - low_value_penalty
                 - generic_penalty
             )
 
-        item["_score"] = round(score, 6)
-        item["_year_score"] = round(year_score, 6)
-        item["_entity_score"] = round(entity_score, 6)
+        item["_score"] = round(
+            score,
+            6
+        )
+
+        item["_year_score"] = round(
+            year_score,
+            6
+        )
+
+        item["_entity_score"] = round(
+            entity_score,
+            6
+        )
 
         ranked.append(item)
 
     ranked.sort(
-        key=lambda x: x.get("_score", 0),
+        key=lambda x: x.get(
+            "_score",
+            0
+        ),
         reverse=True
     )
 
@@ -1363,10 +1787,22 @@ def _strip_internal_fields(results):
 
     for item in results:
         clean.append({
-            "title": item.get("title", ""),
-            "url": item.get("url", ""),
-            "content": item.get("content", ""),
-            "source": item.get("source", ""),
+            "title": item.get(
+                "title",
+                ""
+            ),
+            "url": item.get(
+                "url",
+                ""
+            ),
+            "content": item.get(
+                "content",
+                ""
+            ),
+            "source": item.get(
+                "source",
+                ""
+            ),
         })
 
     return clean
@@ -1376,7 +1812,10 @@ def _strip_internal_fields(results):
 # MAIN SEARCH FUNCTION
 # ============================================================
 
-def search_web(query, max_results=DEFAULT_MAX_RESULTS):
+def search_web(
+    query,
+    max_results=DEFAULT_MAX_RESULTS
+):
     """
     Main web-search entry point used by Hello AI.
 
@@ -1392,30 +1831,56 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
     - low-value domain filtering
     - source-quality ranking
     - deduplication
+    - explicit YouTube/media-link search
+    - preferred Indian news-source search
     """
 
-    query = _clean_query(query)
+    query = _clean_query(
+        query
+    )
 
     if not query:
         return []
 
     try:
-        max_results = int(max_results)
+        max_results = int(
+            max_results
+        )
     except Exception:
         max_results = DEFAULT_MAX_RESULTS
 
     max_results = max(
         1,
-        min(max_results, 10)
+        min(
+            max_results,
+            10
+        )
     )
 
-    years = _extract_years(query)
-    entities = _detect_query_entities(query)
+    years = _extract_years(
+        query
+    )
 
-    current_query = _is_current_query(query)
-    news_query = _is_news_query(query)
+    entities = _detect_query_entities(
+        query
+    )
 
-    year_query = bool(years)
+    current_query = _is_current_query(
+        query
+    )
+
+    news_query = _is_news_query(
+        query
+    )
+
+    media_link_query = _is_media_link_query(
+        query
+    )
+
+    year_query = bool(
+        years
+    )
+
     future_query = any(
         _is_future_year(year)
         for year in years
@@ -1424,39 +1889,60 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
     variants = _build_query_variants(
         query,
         entities,
-        years
+        years,
+        media_link_query=media_link_query,
+        news_query=news_query,
     )
 
-    # Always search the user's exact query first.
     search_queries = variants[:]
 
-    # Safety fallback.
     if not search_queries:
-        search_queries = [query]
+        search_queries = [
+            query
+        ]
 
     all_results = []
 
-    for index, search_query in enumerate(search_queries):
-        # More results from first few variants.
+    for index, search_query in enumerate(
+        search_queries
+    ):
         variant_limit = max(
             5,
-            min(8, max_results + 2)
+            min(
+                8,
+                max_results + 2
+            )
         )
 
         # Explicit year searches must NOT use current freshness.
         if year_query:
             topic = None
             time_range = None
-        else:
-            topic = "news" if news_query else None
 
-            if current_query:
-                time_range = "week"
-            else:
+        else:
+            # Media searches should not be forced into Tavily's
+            # news topic.
+            if media_link_query:
+                topic = None
                 time_range = None
 
-        # First query gets advanced search.
-        depth = "advanced" if index < 4 else "basic"
+            else:
+                topic = (
+                    "news"
+                    if news_query
+                    else None
+                )
+
+                if current_query:
+                    time_range = "week"
+                else:
+                    time_range = None
+
+        depth = (
+            "advanced"
+            if index < 4
+            else "basic"
+        )
 
         results = _tavily_search(
             search_query,
@@ -1466,9 +1952,10 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
             time_range=time_range,
         )
 
-        all_results.extend(results)
+        all_results.extend(
+            results
+        )
 
-        # Avoid excessive API calls once enough results exist.
         if len(all_results) >= max_results * 4:
             break
 
@@ -1482,16 +1969,23 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
         )
 
         if item:
-            cleaned.append(item)
+            cleaned.append(
+                item
+            )
 
     # Deduplicate.
-    cleaned = _dedupe_results(cleaned)
+    cleaned = _dedupe_results(
+        cleaned
+    )
 
     if not cleaned:
         return []
 
     # Explicit year/entity filtering.
-    if year_query:
+    if (
+        year_query
+        and not media_link_query
+    ):
         cleaned = _filter_year_entity_results(
             cleaned,
             years,
@@ -1504,21 +1998,114 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
         query,
         years=years,
         entities=entities,
+        media_link_query=media_link_query,
+        news_query=news_query,
     )
+
+    # --------------------------------------------------------
+    # MEDIA LINK RULE
+    #
+    # Keep YouTube results for explicit media-link requests.
+    # Prefer direct watch URLs. Never replace them with a
+    # generic YouTube search URL here.
+    # --------------------------------------------------------
+
+    if media_link_query:
+        youtube_results = []
+        other_results = []
+
+        for item in ranked:
+            url = item.get(
+                "url",
+                ""
+            )
+
+            domain = _domain_from_url(
+                url
+            )
+
+            is_youtube = (
+                domain == "youtube.com"
+                or domain.endswith(
+                    ".youtube.com"
+                )
+                or domain == "youtu.be"
+            )
+
+            if is_youtube:
+                youtube_results.append(
+                    item
+                )
+            else:
+                other_results.append(
+                    item
+                )
+
+        if youtube_results:
+            ranked = (
+                youtube_results
+                + other_results
+            )
+
+    # --------------------------------------------------------
+    # NEWS SOURCE RULE
+    #
+    # For current/latest news, keep preferred Indian sources
+    # highly visible. This includes ABP Ananda plus other
+    # Indian sources when Tavily returns them.
+    # --------------------------------------------------------
+
+    if (
+        news_query
+        and not media_link_query
+    ):
+        preferred = []
+        other = []
+
+        for item in ranked:
+            if _is_preferred_news_source(
+                item.get(
+                    "url",
+                    ""
+                )
+            ):
+                preferred.append(
+                    item
+                )
+            else:
+                other.append(
+                    item
+                )
+
+        # Keep preferred sources first, but do not throw away
+        # other relevant sources.
+        if preferred:
+            ranked = (
+                preferred
+                + other
+            )
 
     # --------------------------------------------------------
     # LOW-VALUE DOMAIN RULE
     #
-    # If at least 3 good results exist, remove YouTube/social
-    # results completely for explicit-year queries.
+    # For normal explicit-year searches, remove YouTube/social
+    # results when at least 3 good results exist.
+    #
+    # Do NOT apply this to explicit media-link searches.
     # --------------------------------------------------------
 
-    if year_query:
+    if (
+        year_query
+        and not media_link_query
+    ):
         good_results = [
             item
             for item in ranked
             if not _is_low_value_url(
-                item.get("url", "")
+                item.get(
+                    "url",
+                    ""
+                )
             )
         ]
 
@@ -1531,12 +2118,22 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
     # too few useful results.
     # --------------------------------------------------------
 
-    if future_query and _is_event_query(query):
+    if (
+        future_query
+        and _is_event_query(query)
+    ):
         useful_future = []
 
         for item in ranked:
-            title = item.get("title", "").lower()
-            content = item.get("content", "").lower()
+            title = item.get(
+                "title",
+                ""
+            ).lower()
+
+            content = item.get(
+                "content",
+                ""
+            ).lower()
 
             strong_future_markers = [
                 "planned",
@@ -1562,19 +2159,26 @@ def search_web(query, max_results=DEFAULT_MAX_RESULTS):
             marker_hits = sum(
                 1
                 for marker in strong_future_markers
-                if marker in title or marker in content
+                if marker in title
+                or marker in content
             )
 
             if marker_hits > 0:
-                useful_future.append(item)
+                useful_future.append(
+                    item
+                )
 
         if len(useful_future) >= 3:
             ranked = useful_future
 
     # Final limit.
-    ranked = ranked[:max_results]
+    ranked = ranked[
+        :max_results
+    ]
 
-    return _strip_internal_fields(ranked)
+    return _strip_internal_fields(
+        ranked
+    )
 
 
 # ============================================================
@@ -1591,11 +2195,14 @@ def should_search_web(query):
     - news
     - events
     - source requests
+    - explicit media-link requests
     - location/address/PIN/route questions that benefit
       from live web evidence
     """
 
-    text = _safe_text(query).lower()
+    text = _safe_text(
+        query
+    ).lower()
 
     if not text:
         return False
@@ -1607,6 +2214,9 @@ def should_search_web(query):
         return True
 
     if _is_news_query(text):
+        return True
+
+    if _is_media_link_query(text):
         return True
 
     web_keywords = [
@@ -1670,7 +2280,15 @@ def should_search_web(query):
     )
 
 
+# ============================================================
+# PUBLIC EXPORTS
+# ============================================================
+
 __all__ = [
     "search_web",
     "should_search_web",
+    "is_explicit_link_request",
+    "is_news_query",
+    "is_media_link_query",
+    "is_youtube_link_query",
 ]

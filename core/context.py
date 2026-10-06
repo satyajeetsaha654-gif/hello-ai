@@ -6,6 +6,7 @@ Hello AI - Conversation Context
 - সর্বশেষ ২০টি message রাখা
 - Follow-up question বুঝতে সাহায্য করা
 - আগের conversation থেকে place/topic/reference resolve করা
+- আগের news item থেকে news follow-up reference resolve করা
 """
 
 from __future__ import annotations
@@ -149,12 +150,9 @@ def normalize_history(
     if not normalized:
         return []
 
-    # সর্বশেষ message-গুলো রাখি
     if len(normalized) > max_messages:
         normalized = normalized[-max_messages:]
 
-    # Conversation assistant দিয়ে শুরু হলে
-    # প্রথম assistant message বাদ।
     while (
         normalized
         and normalized[0]["role"] == "assistant"
@@ -164,12 +162,9 @@ def normalize_history(
     if not normalized:
         return []
 
-    # Total character limit.
     result: list[dict[str, str]] = []
     total_chars = 0
 
-    # Latest 20-এর মধ্যে যতটা সম্ভব context রাখা।
-    # প্রয়োজনে পুরোনো দিক থেকে বাদ দেওয়া হবে।
     for message in reversed(normalized):
         size = len(message["content"])
 
@@ -299,6 +294,31 @@ FOLLOWUP_PATTERNS = (
     "মানে কী",
     "আর কী",
     "আর কি",
+    "লিংকটা দাও",
+    "লিংকটা দিন",
+    "লিংক দাও",
+    "লিংক দিন",
+    "ওটার লিংক",
+    "এটার লিংক",
+    "কতক্ষণ লাগবে",
+    "কত সময় লাগবে",
+    "কত সময় লাগবে",
+    "তারপর কী",
+    "তারপর কি",
+
+    # News follow-up — Bengali
+    "এই খবর",
+    "ওই খবর",
+    "এই নিউজ",
+    "ওই নিউজ",
+    "এই সংবাদ",
+    "ওই সংবাদ",
+    "খবরটা",
+    "খবরটি",
+    "নিউজটা",
+    "নিউজটি",
+    "সংবাদটা",
+    "সংবাদটি",
 
     # Roman Bengali
     "aro bolo",
@@ -314,13 +334,33 @@ FOLLOWUP_PATTERNS = (
     "okhane",
     "okhan theke",
     "sekhane",
-    "sekh an theke",
+    "sekhan theke",
     "ei jayga",
     "ei jagay",
     "oi jayga",
     "oi jagay",
     "eta",
     "ota",
+    "link ta dao",
+    "link dao",
+    "otar link",
+    "etar link",
+    "koto khon lagbe",
+    "koto somoy lagbe",
+    "tarpor ki",
+    "tarpor",
+
+    # Roman Bengali — news
+    "ei khobor",
+    "oi khobor",
+    "ei news",
+    "oi news",
+    "ei songbad",
+    "oi songbad",
+    "khoborta",
+    "khoborti",
+    "newsta",
+    "newsti",
 
     # English
     "same",
@@ -340,6 +380,20 @@ FOLLOWUP_PATTERNS = (
     "from there",
     "its",
     "it",
+    "this news",
+    "that news",
+    "this story",
+    "that story",
+    "this article",
+    "that article",
+    "the news",
+    "the story",
+    "give me the link",
+    "send the link",
+    "link please",
+    "how long",
+    "what next",
+    "then what",
 
     # Hindi
     "और बताओ",
@@ -354,6 +408,20 @@ FOLLOWUP_PATTERNS = (
     "वहां",
     "उसका",
     "इसका",
+    "लिंक दो",
+    "लिंक दीजिए",
+    "कितना समय लगेगा",
+    "फिर क्या",
+
+    # Hindi — news
+    "यह खबर",
+    "वह खबर",
+    "इस खबर",
+    "उस खबर",
+    "यह न्यूज़",
+    "वह न्यूज़",
+    "इस न्यूज़",
+    "उस न्यूज़",
 )
 
 
@@ -373,60 +441,316 @@ def is_likely_followup(
     if not history_has_user_message(history):
         return False
 
-    if any(
-        pattern in value
-        for pattern in FOLLOWUP_PATTERNS
-    ):
-        return True
-
     compact = " ".join(
         value.split()
     )
 
-    if len(compact) <= 60:
+    # --------------------------------------------------------
+    # Explicit follow-up patterns
+    # --------------------------------------------------------
 
-        pronoun_words = (
-            "এটা",
-            "ওটা",
-            "এটির",
-            "ওটির",
-            "এখানে",
-            "ওখানে",
-            "ওখান থেকে",
-            "এখান থেকে",
-            "তার",
-            "সেটা",
-            "সেখানে",
-            "এইটা",
-            "ওইটা",
-            "এই জায়গা",
-            "এই জায়গা",
-            "ওই জায়গা",
-            "ওই জায়গা",
-            "this",
-            "that",
-            "it",
-            "there",
-            "here",
-            "that place",
-            "this place",
-            "from there",
-            "यह",
-            "वह",
-            "वहाँ",
-            "वहां",
-            "उसका",
-            "इसका",
+    if any(
+        pattern.casefold() in compact
+        for pattern in FOLLOWUP_PATTERNS
+    ):
+        return True
+
+    # --------------------------------------------------------
+    # Strong reference / deictic indicators
+    #
+    # These clearly point back to something already discussed.
+    # --------------------------------------------------------
+
+    reference_patterns = (
+        # Bengali
+        r"(?<!\S)এটা(?!\S)",
+        r"(?<!\S)ওটা(?!\S)",
+        r"(?<!\S)এইটা(?!\S)",
+        r"(?<!\S)ওইটা(?!\S)",
+        r"(?<!\S)এটার(?!\S)",
+        r"(?<!\S)ওটার(?!\S)",
+        r"(?<!\S)এর(?!\S)",
+        r"(?<!\S)ওর(?!\S)",
+        r"(?<!\S)তার(?!\S)",
+        r"(?<!\S)এখানে(?!\S)",
+        r"(?<!\S)ওখানে(?!\S)",
+        r"(?<!\S)সেখানে(?!\S)",
+        r"ওখান থেকে",
+        r"সেখান থেকে",
+        r"এই লিংক",
+        r"ওই লিংক",
+        r"এই ভিডিও",
+        r"ওই ভিডিও",
+        r"এই গান",
+        r"ওই গান",
+        r"এই মুভি",
+        r"ওই মুভি",
+        r"এই খবর",
+        r"ওই খবর",
+        r"এই নিউজ",
+        r"ওই নিউজ",
+
+        # Roman Bengali
+        r"(?<!\S)eta(?!\S)",
+        r"(?<!\S)ota(?!\S)",
+        r"(?<!\S)etar(?!\S)",
+        r"(?<!\S)otar(?!\S)",
+        r"(?<!\S)er(?!\S)",
+        r"(?<!\S)or(?!\S)",
+        r"(?<!\S)tar(?!\S)",
+        r"(?<!\S)eikhane(?!\S)",
+        r"(?<!\S)okhane(?!\S)",
+        r"(?<!\S)sekhane(?!\S)",
+        r"okhan theke",
+        r"sekhan theke",
+        r"ei link",
+        r"oi link",
+        r"ei video",
+        r"oi video",
+        r"ei gan",
+        r"oi gan",
+        r"ei movie",
+        r"oi movie",
+
+        # English
+        r"(?<!\S)this(?!\S)",
+        r"(?<!\S)that(?!\S)",
+        r"(?<!\S)it(?!\S)",
+        r"(?<!\S)its(?!\S)",
+        r"(?<!\S)there(?!\S)",
+        r"(?<!\S)here(?!\S)",
+        r"that place",
+        r"this place",
+        r"that link",
+        r"this link",
+        r"that video",
+        r"this video",
+        r"that song",
+        r"this song",
+        r"that movie",
+        r"this movie",
+        r"that news",
+        r"this news",
+
+        # Hindi
+        r"(?<!\S)यह(?!\S)",
+        r"(?<!\S)वह(?!\S)",
+        r"(?<!\S)इसका(?!\S)",
+        r"(?<!\S)उसका(?!\S)",
+        r"(?<!\S)इसकी(?!\S)",
+        r"(?<!\S)उसकी(?!\S)",
+        r"(?<!\S)यहाँ(?!\S)",
+        r"(?<!\S)वहाँ(?!\S)",
+        r"इस लिंक",
+        r"उस लिंक",
+        r"इस वीडियो",
+        r"उस वीडियो",
+        r"इस गाने",
+        r"उस गाने",
+    )
+
+    if len(compact) <= 160:
+        if any(
+            re.search(
+                pattern,
+                compact,
+                flags=re.I,
+            )
+            for pattern in reference_patterns
+        ):
+            return True
+
+    # --------------------------------------------------------
+    # Strong contextual question forms
+    #
+    # These are follow-ups when they ask about an already
+    # mentioned subject without repeating its name.
+    # --------------------------------------------------------
+
+    contextual_patterns = (
+        # Bengali
+        r"^আরও?\b",
+        r"^কোনটা\b",
+        r"^কোনটি\b",
+        r"^কতক্ষণ\b",
+        r"^কত সময়\b",
+        r"^কত সময়\b",
+        r"^কীভাবে\b",
+        r"^কিভাবে\b",
+        r"^কোথায়\b",
+        r"^কোথায়\b",
+        r"^তারপর\b",
+        r"^লিংক\b",
+        r"^লিংকটা\b",
+        r"^আরেকটা\b",
+        r"^আরও একটা\b",
+        r"^ওটার\b",
+        r"^এটার\b",
+        r"^এর\b",
+        r"^ওর\b",
+        r"^তার\b",
+
+        # Common Bengali follow-up questions
+        r"^এর গায়ক\b",
+        r"^এর গায়ক\b",
+        r"^এর পরিচালক\b",
+        r"^এর অভিনেতা\b",
+        r"^এর অভিনেত্রী\b",
+        r"^এর নাম\b",
+        r"^এর release date\b",
+        r"^এর রিলিজ\b",
+        r"^এটার নাম\b",
+        r"^এটার পরিচালক\b",
+        r"^এটার গায়ক\b",
+        r"^এটার গায়ক\b",
+        r"^ওটার পরিচালক\b",
+        r"^ওটার নাম\b",
+        r"^ওটার গায়ক\b",
+        r"^ওটার গায়ক\b",
+
+        # Roman Bengali
+        r"^aro\b",
+        r"^konta\b",
+        r"^kothay\b",
+        r"^kivabe\b",
+        r"^koto khon\b",
+        r"^koto somoy\b",
+        r"^tarpor\b",
+        r"^link\b",
+        r"^link ta\b",
+        r"^arekta\b",
+        r"^aro ekta\b",
+        r"^etar\b",
+        r"^otar\b",
+        r"^er\b",
+        r"^or\b",
+        r"^tar\b",
+
+        # English
+        r"^more\b",
+        r"^another\b",
+        r"^which one\b",
+        r"^how long\b",
+        r"^what about\b",
+        r"^what next\b",
+        r"^then\b",
+        r"^the link\b",
+        r"^its link\b",
+        r"^release date\b",
+        r"^who is the singer\b",
+        r"^who directed\b",
+        r"^what is its name\b",
+
+        # Hindi
+        r"^और\b",
+        r"^और एक\b",
+        r"^फिर\b",
+        r"^कौन सा\b",
+        r"^कितना समय\b",
+        r"^कैसे\b",
+        r"^कहाँ\b",
+        r"^लिंक\b",
+        r"^इसका\b",
+        r"^उसका\b",
+    )
+
+    if len(compact) <= 160:
+        if any(
+            re.search(
+                pattern,
+                compact,
+                flags=re.I,
+            )
+            for pattern in contextual_patterns
+        ):
+            return True
+
+    # --------------------------------------------------------
+    # Short contextual questions with a clear question marker
+    #
+    # Do NOT treat generic "who/what/how/when" alone as a
+    # follow-up. That prevents new standalone questions from
+    # being incorrectly attached to old conversation context.
+    # --------------------------------------------------------
+
+    if len(compact.split()) <= 10:
+
+        short_contextual_patterns = (
+            # Bengali
+            r"^কতক্ষণ",
+            r"^কত সময়",
+            r"^কত সময়",
+            r"^কোথায়",
+            r"^কোথায়",
+            r"^কীভাবে",
+            r"^কিভাবে",
+            r"^তারপর",
+            r"^আরেকটা",
+            r"^আরও একটা",
+            r"^লিংকটা",
+            r"^এটার",
+            r"^ওটার",
+            r"^এর ",
+            r"^ওর ",
+            r"^তার ",
+            r"^এইটা",
+            r"^ওইটা",
+
+            # Roman Bengali
+            r"^kotokhon",
+            r"^koto khon",
+            r"^koto somoy",
+            r"^kothay",
+            r"^kivabe",
+            r"^tarpor",
+            r"^arekta",
+            r"^aro ekta",
+            r"^link ta",
+            r"^etar",
+            r"^otar",
+            r"^er ",
+            r"^or ",
+            r"^tar ",
+            r"^eta",
+            r"^ota",
+
+            # English
+            r"^how long",
+            r"^what about",
+            r"^what next",
+            r"^then\b",
+            r"^another\b",
+            r"^the link",
+            r"^its link",
+            r"^this ",
+            r"^that ",
+            r"^who is the singer",
+            r"^who directed",
+            r"^release date",
+
+            # Hindi
+            r"^कितना समय",
+            r"^कहाँ",
+            r"^कैसे",
+            r"^फिर",
+            r"^और एक",
+            r"^इसका",
+            r"^उसका",
+            r"^यह ",
+            r"^वह ",
         )
 
         if any(
-            word in compact
-            for word in pronoun_words
+            re.search(
+                pattern,
+                compact,
+                flags=re.I,
+            )
+            for pattern in short_contextual_patterns
         ):
             return True
 
     return False
-
 
 # ============================================================
 # REFERENCE EXTRACTION
@@ -475,7 +799,6 @@ def _clean_reference(
     if not value:
         return ""
 
-    # সাধারণ conversational prefix বাদ।
     value = re.sub(
         r"^(এই|ওই|সেই|এইটা|ওইটা|ওটা|এটা)\s+",
         "",
@@ -498,7 +821,6 @@ def _extract_place_from_text(
     if not value:
         return ""
 
-    # পরিচিত location-question pattern।
     patterns = (
         r"(?:নাম|নামটা)\s+(?:কি|কী)\s*(?:হল|হয়|হয়)?\s*$",
         r"(?:কোথায়|কোথায়)\s*(?:আছে|অবস্থিত)?\s*$",
@@ -517,7 +839,6 @@ def _extract_place_from_text(
             flags=re.I,
         ).strip()
 
-    # Question prefix বাদ।
     candidate = re.sub(
         r"^(বলুন|বলো|আমাকে|দয়া করে|দয়া করে)\s+",
         "",
@@ -525,11 +846,9 @@ def _extract_place_from_text(
         flags=re.I,
     ).strip()
 
-    # খুব ছোট generic sentence হলে entity হিসেবে নেব না।
     if len(candidate) < 3:
         return ""
 
-    # শুধু common question words হলে বাদ।
     if candidate.casefold() in {
         item.casefold()
         for item in _REFERENCE_STOP_WORDS
@@ -539,42 +858,210 @@ def _extract_place_from_text(
     return _clean_reference(candidate)
 
 
-def _extract_recent_reference(
+# ============================================================
+# NEWS REFERENCE EXTRACTION
+# ============================================================
+
+def _is_news_like_text(text: str) -> bool:
+    """
+    Text-টি news/headline ধরনের কি না।
+    """
+
+    if not isinstance(text, str):
+        return False
+
+    value = text.casefold()
+
+    news_words = (
+        "খবর",
+        "নিউজ",
+        "সংবাদ",
+        "latest news",
+        "breaking news",
+        "news",
+        "headline",
+        "story",
+        "article",
+        " খবর ",
+        " खबर",
+        "न्यूज़",
+        "समाचार",
+    )
+
+    return any(
+        word in value
+        for word in news_words
+    )
+
+
+def _clean_news_title(value: str) -> str:
+    """
+    News title থেকে numbering, Markdown এবং source-link
+    অংশ বাদ দেয়।
+    """
+
+    if not isinstance(value, str):
+        return ""
+
+    title = value.strip()
+
+    if not title:
+        return ""
+
+    title = re.sub(
+        r"\[([^\]]+)\]\(\s*https?://[^)\s]+\s*\)",
+        r"\1",
+        title,
+        flags=re.I,
+    )
+
+    title = re.sub(
+        r"https?://\S+",
+        "",
+        title,
+        flags=re.I,
+    )
+
+    title = re.sub(
+        r"^\s*(?:[-•*]\s+|\d+\s*[\.)]\s+|[০-৯]+\s*[\.)]\s+)",
+        "",
+        title,
+    )
+
+    title = re.sub(
+        r"\s+",
+        " ",
+        title,
+    ).strip(" \t\r\n-–—:।")
+
+    return title
+
+
+def _extract_recent_news_reference(
     history: Any,
 ) -> str:
+    """
+    সর্বশেষ assistant news answer থেকে সবচেয়ে সম্ভাব্য
+    news headline/reference বের করে।
+
+    Source/link line বা সাধারণ introductory sentence
+    reference হিসেবে নেওয়া হবে না।
+    """
 
     normalized = normalize_history(
         history,
         max_messages=MAX_HISTORY_MESSAGES,
     )
 
-    # সর্বশেষ user messages আগে দেখি।
-    for message in reversed(normalized):
-        if message["role"] != "user":
-            continue
-
-        content = message["content"].strip()
-
-        # Location/subject-এর সম্ভাব্য sentence।
-        reference = _extract_place_from_text(
-            content
-        )
-
-        if reference:
-            # অতিরিক্ত বড় বা পুরো paragraph হলে
-            # entity হিসেবে ব্যবহার না করা।
-            if len(reference) <= 160:
-                return reference
-
-    # User message-এ না পেলে assistant-এর সাম্প্রতিক উত্তর
-    # থেকেও একটি সম্ভাব্য named reference নেওয়া যাবে।
     for message in reversed(normalized):
         if message["role"] != "assistant":
             continue
 
         content = message["content"].strip()
 
-        # "হালিশহর রেলওয়ে স্টেশন হলো..." ধরনের উত্তর।
+        if not content or not _is_news_like_text(content):
+            continue
+
+        lines = [
+            line.strip()
+            for line in content.splitlines()
+            if line.strip()
+        ]
+
+        candidates: list[str] = []
+
+        for line in lines:
+            lowered = line.casefold()
+
+            if (
+                "http://" in lowered
+                or "https://" in lowered
+                or "source:" in lowered
+                or "সোর্স:" in lowered
+                or "সূত্র:" in lowered
+                or "read more" in lowered
+                or "আরও পড়ুন" in lowered
+                or "আরও পড়ুন" in lowered
+            ):
+                continue
+
+            cleaned = _clean_news_title(line)
+
+            if not cleaned:
+                continue
+
+            if cleaned.casefold() in {
+                "আজকের খবর",
+                "আজকের সর্বশেষ খবর",
+                "latest news",
+                "latest news today",
+                "today's news",
+                "খবর",
+                "নিউজ",
+                "সংবাদ",
+            }:
+                continue
+
+            if re.match(
+                r"^(?:\d+|[০-৯]+)\s*[\.)]",
+                line,
+            ):
+                candidates.insert(0, cleaned)
+                continue
+
+            if len(cleaned) >= 12:
+                candidates.append(cleaned)
+
+        if candidates:
+            reference = candidates[0]
+
+            if len(reference) <= 300:
+                return reference
+
+    return ""
+
+
+def _extract_recent_reference(
+    history: Any,
+) -> str:
+
+    normalized = normalize_history(history)
+
+    if normalized:
+        recent_user = last_user_message(normalized)
+        recent_assistant = last_assistant_message(normalized)
+
+        if (
+            _is_news_like_text(recent_user)
+            or _is_news_like_text(recent_assistant)
+        ):
+            news_reference = _extract_recent_news_reference(
+                normalized
+            )
+
+            if news_reference:
+                return news_reference
+
+    for message in reversed(normalized):
+        if message["role"] != "user":
+            continue
+
+        content = message["content"].strip()
+
+        reference = _extract_place_from_text(
+            content
+        )
+
+        if reference:
+            if len(reference) <= 160:
+                return reference
+
+    for message in reversed(normalized):
+        if message["role"] != "assistant":
+            continue
+
+        content = message["content"].strip()
+
         match = re.search(
             r"^(.{3,120}?)\s+(?:হলো|হল|হয়|হয়|is|is located|অবস্থিত)",
             content,
@@ -604,17 +1091,14 @@ def resolve_followup_question(
     Follow-up question-এর জন্য history থেকে আগের reference
     resolve করে।
 
+    সরাসরি pronoun/reference পাওয়া গেলে সেটি replace করা হয়।
+
+    আর reference না পাওয়া গেলেও, প্রশ্নটি যদি conversation-এর
+    continuation হয়, তাহলে সাম্প্রতিক conversation context
+    effective question-এর মধ্যে দেওয়া হয়।
+
     Returns:
         (effective_question, reference)
-
-    উদাহরণ:
-        আগের:
-            "হালিশহর রেলওয়ে স্টেশন কোথায়?"
-        নতুন:
-            "এই জায়গায় কীভাবে যাব?"
-
-        ফল:
-            "হালিশহর রেলওয়ে স্টেশনে কীভাবে যাব?"
     """
 
     if not isinstance(question, str):
@@ -636,13 +1120,228 @@ def resolve_followup_question(
     ):
         return original, ""
 
+    # --------------------------------------------------------
+    # NEWS FOLLOW-UP
+    # --------------------------------------------------------
+
+    news_deictic_patterns = (
+        r"এই\s+খবর(?:টা|টি|টার|টির)?",
+        r"ওই\s+খবর(?:টা|টি|টার|টির)?",
+        r"এই\s+নিউজ(?:টা|টি|টার|টির)?",
+        r"ওই\s+নিউজ(?:টা|টি|টার|টির)?",
+        r"এই\s+সংবাদ(?:টা|টি|টার|টির)?",
+        r"ওই\s+সংবাদ(?:টা|টি|টার|টির)?",
+        r"ei\s+khobor(?:ta|ti|tar|tir)?",
+        r"oi\s+khobor(?:ta|ti|tar|tir)?",
+        r"ei\s+news(?:ta|ti|tar|tir)?",
+        r"oi\s+news(?:ta|ti|tar|tir)?",
+        r"this\s+news",
+        r"that\s+news",
+        r"this\s+story",
+        r"that\s+story",
+        r"this\s+article",
+        r"that\s+article",
+        r"এই\s+खबर",
+        r"ওই\s+खबर",
+        r"यह\s+खबर",
+        r"वह\s+खबर",
+        r"इस\s+खबर",
+        r"उस\s+खबर",
+    )
+
+    is_news_followup = any(
+        re.search(
+            pattern,
+            original,
+            flags=re.I,
+        )
+        for pattern in news_deictic_patterns
+    )
+
+    if is_news_followup:
+        news_reference = _extract_recent_news_reference(
+            normalized
+        )
+
+        if news_reference:
+            resolved_news = original
+
+            news_replacements = (
+                (
+                    r"এই\s+খবর(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"ওই\s+খবর(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"এই\s+নিউজ(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"ওই\s+নিউজ(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"এই\s+সংবাদ(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"ওই\s+সংবাদ(?:টা|টি|টার|টির)?",
+                    news_reference,
+                ),
+                (
+                    r"\bei\s+khobor(?:ta|ti|tar|tir)?\b",
+                    news_reference,
+                ),
+                (
+                    r"\boi\s+khobor(?:ta|ti|tar|tir)?\b",
+                    news_reference,
+                ),
+                (
+                    r"\bei\s+news(?:ta|ti|tar|tir)?\b",
+                    news_reference,
+                ),
+                (
+                    r"\boi\s+news(?:ta|ti|tar|tir)?\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthis\s+news\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthat\s+news\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthis\s+story\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthat\s+story\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthis\s+article\b",
+                    news_reference,
+                ),
+                (
+                    r"\bthat\s+article\b",
+                    news_reference,
+                ),
+                (
+                    r"यह\s+खबर",
+                    news_reference,
+                ),
+                (
+                    r"वह\s+खबर",
+                    news_reference,
+                ),
+                (
+                    r"इस\s+खबर",
+                    news_reference,
+                ),
+                (
+                    r"उस\s+खबर",
+                    news_reference,
+                ),
+            )
+
+            for pattern, replacement in news_replacements:
+                resolved_news = re.sub(
+                    pattern,
+                    replacement,
+                    resolved_news,
+                    flags=re.I,
+                )
+
+            resolved_news = re.sub(
+                r"\s+",
+                " ",
+                resolved_news,
+            ).strip()
+
+            return resolved_news, news_reference
+
+    # --------------------------------------------------------
+    # GENERAL REFERENCE
+    # --------------------------------------------------------
+
     reference = _extract_recent_reference(
         normalized
     )
 
     if not reference:
-        # Reference না পাওয়া গেলে original question-ই রাখি।
-        # AI নিজে history দেখে উত্তর দিতে পারবে।
+        # ----------------------------------------------------
+        # IMPORTANT:
+        # নির্দিষ্ট reference পাওয়া না গেলেও conversation-এর
+        # continuation হলে recent context attach করা হবে।
+        #
+        # এতে:
+        #
+        # User:
+        # "MrBeast-এর latest video কী?"
+        #
+        # User:
+        # "লিংকটা দাও"
+        #
+        # অথবা:
+        #
+        # User:
+        # "Kanchrapara থেকে Halisahar কীভাবে যাব?"
+        #
+        # User:
+        # "কতক্ষণ লাগবে?"
+        #
+        # এই ধরনের follow-up শুধু keyword-এর ওপর নির্ভর করবে না।
+        # ----------------------------------------------------
+
+        recent_context = normalized[-8:]
+
+        context_lines: list[str] = []
+
+        for message in recent_context:
+            role = message["role"]
+
+            if role == "user":
+                label = "User"
+            else:
+                label = "Assistant"
+
+            content = message["content"].strip()
+
+            if not content:
+                continue
+
+            context_lines.append(
+                f"{label}: {content}"
+            )
+
+        if context_lines:
+            conversation_context = "\n".join(
+                context_lines
+            )
+
+            effective_question = (
+                "The user is continuing the previous "
+                "conversation.\n\n"
+                "Use the following recent conversation "
+                "context to understand what the current "
+                "question refers to.\n\n"
+                f"{conversation_context}\n\n"
+                "Current user question:\n"
+                f"{original}\n\n"
+                "Answer the current question directly. "
+                "If the current question refers to something "
+                "from the previous conversation, use that "
+                "context. Do not repeat the entire "
+                "conversation unless necessary."
+            )
+
+            return effective_question, ""
+
         return original, ""
 
     value = original
@@ -780,8 +1479,10 @@ def resolve_followup_question(
             flags=re.I,
         )
 
-    # "আরও বিস্তারিত বলো" / "more details" হলে
-    # সরাসরি আগের subject-এর উপর বিস্তারিত চাই।
+    # --------------------------------------------------------
+    # "More" type follow-up
+    # --------------------------------------------------------
+
     if resolved.strip().casefold() in {
         "আরও বল",
         "আরো বল",
